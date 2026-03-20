@@ -1467,15 +1467,6 @@ function displaySymbol(sym){
 }
 
 // Plain text version (no HTML) for exports/search
-function displaySymbolText(sym){
-  if(!sym) return sym;
-  const m = sym.match(/^([^:]+):(.+)$/);
-  if(!m) return sym.toUpperCase();
-  const base   = m[1].toUpperCase();
-  const suffix = m[2].toUpperCase();
-  const broker = BROKER_SUFFIX[suffix] || suffix;
-  return base + ' (' + broker + ')';
-}
 
 function calcH(){
   const map={};
@@ -2543,7 +2534,6 @@ Chart.defaults.font.size = 11;
 const PALETTE = ['#3d9cf0','#00d68f','#f5a623','#ff4757','#b47bff','#00d4ff','#ff6b6b','#ffd166','#06d6a0','#118ab2'];
 
 // ── DATE HELPERS ──────────────────────────────────────────────────────
-function tradeDate(t){ return new Date(t.date); }
 function filterByPeriod(arr, period){
   const now = new Date();
   // Australian FY: 1 Jul - 30 Jun
@@ -3785,7 +3775,6 @@ function dateToFY(dateStr){
   return m >= 7 ? y + 1 : y;  // July+ belongs to next FY
 }
 function fyLabel(fy){ return 'FY' + fy; }
-function fyRange(fy){ return { from: (fy-1)+'-07-01', to: fy+'-06-30' }; }
 
 function renderFYBar(){
   const bar = $('dv-fy-bar');
@@ -5008,77 +4997,7 @@ function drpCalc(){
   }
 }
 
-function saveDRP(){
-  const date     = $('dv-date')?.value;
-  const sym      = ($('dv-sym')?.value||'').trim().toUpperCase();
-  const at       = $('dv-drp-at')?.value || 'etf';
-  const units    = parseFloat($('dv-drp-units')?.value);
-  const price    = parseFloat($('dv-drp-price')?.value);
-  const amount   = parseFloat($('dv-amt')?.value);
-  const carryIn  = parseFloat($('dv-drp-carry-in')?.value) || 0;
-  const source   = $('dv-drp-source')?.value || 'drp';
-  const notes    = ($('dv-notes')?.value||'').trim();
 
-  if(!date || !sym || isNaN(units) || isNaN(price) || isNaN(amount) || units<=0 || price<=0 || amount<=0){
-    notify('Fill in date, symbol, dividend amount, units and price.','err'); return;
-  }
-
-  const reinvested = +(units * price).toFixed(2);
-  const available  = +(amount + carryIn).toFixed(2);
-  const carryOut   = +(available - reinvested).toFixed(2);
-
-  if(carryOut < -0.005){
-    notify(`Units × price (${n2(reinvested)}) exceeds available (${n2(available)}) — check values.`,'err');
-    return;
-  }
-
-  // ── Trade: units issued at DRP price ─────────────────────────────
-  const trade = {
-    date, type:'drp', symbol:sym, assetType:at,
-    units, price, fees:0, source, id:uid(),
-    notes: (notes ? notes+' — ' : '')+'DRP '+nN(units,4)+' units @ '+n2(price)
-           +(carryIn>0 ? ' (incl. '+n2(carryIn)+' carry-in)':''),
-  };
-
-  // ── Dividend: full declared amount ────────────────────────────────
-  const div = {
-    date, symbol:sym, amount, type:'drp', id:uid(),
-    notes: (notes ? notes+' — ':'')+'DRP declared '+n2(amount)
-           +(carryIn>0?' (carry-in '+n2(carryIn)+')':'')
-           +' → '+nN(units,4)+' units @ '+n2(price)
-           +(carryOut>0.005?' | carry-out '+n2(carryOut):''),
-  };
-
-  // ── Save carry-forward for next time ─────────────────────────────
-  const carry = getDRPCarry();
-  if(carryOut > 0.005){
-    carry[sym] = carryOut;
-  } else {
-    delete carry[sym]; // fully reinvested, clear it
-  }
-  saveDRPCarry(carry);
-
-  trades.push(trade);
-  dividends.push(div);
-  save();
-  clearDRP();
-  renderH(); renderT();
-  renderFYBar(); renderDividends(); renderDivCards();
-
-  let msg = `DRP saved — ${nN(units,4)} ${sym} units @ ${n2(price)} | dividend ${n2(amount)}`;
-  if(carryOut > 0.005) msg += ` | ${n2(carryOut)} carried forward`;
-  notify(msg+' ✓');
-}
-
-function clearDRP(){
-  ['dv-date','dv-sym','dv-drp-units','dv-drp-price','dv-amt','dv-drp-carry-in','dv-notes'].forEach(id=>{
-    const el = $(id); if(el) el.value='';
-  });
-  const pt=$('dv-drp-prev-trade'); if(pt) pt.innerHTML='';
-  const pd=$('dv-drp-prev-div');   if(pd) pd.innerHTML='';
-  const pc=$('dv-drp-prev-carry'); if(pc) pc.innerHTML='';
-  const d=$('dv-date'); if(d) d.value=new Date().toISOString().slice(0,10);
-}
 
 // ── COLLAPSIBLE SECTIONS ──────────────────────────────────────────────
 function toggleSection(key){
@@ -6142,7 +6061,7 @@ function exportCSVZip(){
       return;
     }
     const [name, rows] = files[i++];
-    if(!rows.length){ console.log('Skipping empty sheet:', name); next(); return; }
+    if(!rows.length){ next(); return; }
     const ws = XLSX.utils.json_to_sheet(rows);
     const csv = XLSX.utils.sheet_to_csv(ws);
     const blob = new Blob([csv], {type:'text/csv'});
@@ -6654,48 +6573,6 @@ const WORKER_CODE = [
   '      } catch(e) {}',
   '    }));',
   '    return new Response(JSON.stringify(results), { headers: CORS });',
-  '',
-  '    // ── Portfolio sync ──────────────────────────────────────────',
-  '    const syncOp  = url.searchParams.get("sync");',
-  '    const authKey = url.searchParams.get("key")  || request.headers.get("X-Sync-Key") || "";',
-  '    if (syncOp) {',
-  '      // Validate secret key (stored as KV metadata or env var)',
-  '      const SECRET = typeof SYNC_SECRET !== "undefined" ? SYNC_SECRET : "";',
-  '      if (SECRET && authKey !== SECRET)',
-  '        return new Response(JSON.stringify({error:"Unauthorised"}), {status:401, headers:CORS});',
-  '',
-  '      // CORS preflight',
-  '      if (request.method === "OPTIONS")',
-  '        return new Response(null, {headers:{...CORS,"Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"*"}});',
-  '',
-  '      const KV_KEY = "portfolio_data";',
-  '',
-  '      // meta: return timestamp only (for conflict detection)',
-  '      if (syncOp === "meta") {',
-  '        const meta = await PORTFOLIO_KV.get(KV_KEY + "_meta", "json");',
-  '        return new Response(JSON.stringify(meta || {savedAt:null,device:null}), {headers:CORS});',
-  '      }',
-  '',
-  '      // pull: return full portfolio data',
-  '      if (syncOp === "pull") {',
-  '        const data = await PORTFOLIO_KV.get(KV_KEY, "text");',
-  '        if (!data) return new Response(JSON.stringify({error:"No data"}), {status:404, headers:CORS});',
-  '        return new Response(data, {headers:{...CORS,"Content-Type":"application/json"}});',
-  '      }',
-  '',
-  '      // push: store full portfolio data',
-  '      if (syncOp === "push" && request.method === "POST") {',
-  '        const body = await request.text();',
-  '        if (!body) return new Response(JSON.stringify({error:"Empty body"}), {status:400, headers:CORS});',
-  '        const savedAt = new Date().toISOString();',
-  '        const device  = url.searchParams.get("device") || "unknown";',
-  '        await PORTFOLIO_KV.put(KV_KEY, body);',
-  '        await PORTFOLIO_KV.put(KV_KEY + "_meta", JSON.stringify({savedAt, device}));',
-  '        return new Response(JSON.stringify({ok:true, savedAt, device}), {headers:CORS});',
-  '      }',
-  '',
-  '      return new Response(JSON.stringify({error:"Unknown sync op"}), {status:400, headers:CORS});',
-  '    }',
   '',
   '  }',
   '};',
