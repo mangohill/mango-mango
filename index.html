@@ -417,6 +417,7 @@
   </div>
 
   <!-- Best/worst performers -->
+  <div id="an-perf-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div class="tw">
       <div class="th"><span class="tt">TOP PERFORMERS</span></div>
@@ -1028,7 +1029,8 @@ let editingSuperAccountId = null;
 let propRentAnnual = true;   // true=annual, false=monthly
 let propDebtNet = false;     // false=gross debt, true=net (minus offsets)
 let portfolioView = 0;
-let anHiddenGroups = new Set(); // groups hidden in analytics chart // 0=All, 1=Stocks, 2=Crypto
+let anHiddenGroups = new Set();
+let anPerfFilter = 'all'; // asset type filter for performers // groups hidden in analytics chart // 0=All, 1=Stocks, 2=Crypto
 let propRepayAnnual = false; // true=annual, false=monthly
 let editingDivId    = null;
 let hdSortKey = 'value_desc';
@@ -2891,7 +2893,35 @@ function renderAnnualChart(){
 }
 
 function renderPerformers(holdings){
-  const withPnl = holdings.map(h=>{
+  // ── Build filter pills (all unique asset types in holdings) ────
+  const types   = [...new Set(holdings.map(h=>h.assetType))].sort();
+  const pillsEl = $('an-perf-filter');
+  if(pillsEl){
+    const AT_LABEL = {
+      asx_stock:'Stock', etf:'ETF', lic:'LIC', reit:'REIT',
+      crypto:'Crypto', bond:'Bond', managed:'Managed', commodity:'Commodity',
+      super:'Super', all:'All',
+    };
+    const allTypes = ['all', ...types];
+    pillsEl.innerHTML = allTypes.map(t => {
+      const active = anPerfFilter === t;
+      return `<button onclick="anPerfFilter='${t}';renderAnalytics()"
+        style="padding:3px 12px;border-radius:20px;font-size:11px;
+               font-family:var(--mono);cursor:pointer;
+               border:1px solid ${active?'var(--blue)':'var(--border)'};
+               background:${active?'rgba(59,130,246,0.15)':'transparent'};
+               color:${active?'var(--blue)':'var(--text3)'};
+               transition:all .15s">
+        ${AT_LABEL[t]||t}</button>`;
+    }).join('');
+  }
+
+  // ── Filter holdings by selected asset type ─────────────────────
+  const filtered = anPerfFilter === 'all'
+    ? holdings
+    : holdings.filter(h => h.assetType === anPerfFilter);
+
+  const withPnl = filtered.map(h=>{
     const cur = prices[priceSymbol(h.symbol)]??null;
     const mkt = cur!=null?cur*h.units:null;
     const pnl = mkt!=null?mkt-h.costBasis:null;
@@ -2899,7 +2929,7 @@ function renderPerformers(holdings){
     return {...h, pnl, pct};
   }).filter(h=>h.pnl!=null);
 
-  const mkTh = (tid, col, label) => sortTh(tid, col, label, 'renderAnalytics');
+  const mkTh  = (tid, col, label) => sortTh(tid, col, label, 'renderAnalytics');
   const mkRow = h => `<tr>
     <td><b>${displaySymbol(h.symbol)}</b></td><td>${bT(h.assetType)}</td>
     <td class="${clr(h.pnl)}">${n2(h.pnl)}</td>
@@ -2912,7 +2942,7 @@ function renderPerformers(holdings){
   $('an-top-body').closest('table').querySelector('thead').innerHTML = topHdr;
   $('an-bot-body').closest('table').querySelector('thead').innerHTML = botHdr;
 
-  // Top performers
+  // Top performers (profitable, sorted by % desc)
   const topSort = getSort('an-top');
   const topRows = topSort.col
     ? sortRows(withPnl, topSort.col, topSort.dir, 'assetType', 'symbol')
@@ -2920,9 +2950,9 @@ function renderPerformers(holdings){
   const top5 = topRows.filter(h=>h.pct>0).slice(0,5);
   $('an-top-body').innerHTML = top5.length
     ? top5.map(mkRow).join('')
-    : '<tr><td colspan="4" style="color:var(--text3);text-align:center">No profitable positions</td></tr>';
+    : `<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:12px">No profitable positions${anPerfFilter!=='all'?' in '+anPerfFilter:''}</td></tr>`;
 
-  // Bottom performers
+  // Worst performers (losing, sorted by % asc)
   const botSort = getSort('an-bot');
   const botRows = botSort.col
     ? sortRows(withPnl, botSort.col, botSort.dir, 'assetType', 'symbol')
@@ -2930,8 +2960,9 @@ function renderPerformers(holdings){
   const bot5 = botRows.filter(h=>h.pct<0).slice(0,5);
   $('an-bot-body').innerHTML = bot5.length
     ? bot5.map(mkRow).join('')
-    : '<tr><td colspan="4" style="color:var(--text3);text-align:center">No losing positions</td></tr>';
+    : `<tr><td colspan="4" style="color:var(--text3);text-align:center;padding:12px">No losing positions${anPerfFilter!=='all'?' in '+anPerfFilter:''}</td></tr>`;
 }
+
 
 
 function hdSort(key){ hdSortKey=key; $('hd-sort').value=key; renderHD(); }
