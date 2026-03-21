@@ -252,6 +252,7 @@
       <button class="ca-pill" onclick="setCaType('split')">✂️ Stock Split</button>
       <button class="ca-pill" onclick="setCaType('rename')">🏷️ Ticker Rename</button>
       <button class="ca-pill" onclick="setCaType('spinoff')">🌱 Spin-off</button>
+      <button class="ca-pill" onclick="setCaType('worthless')">💀 Write-off (Worthless)</button>
     </div>
 
     <div class="fg" id="ca-form">
@@ -373,12 +374,12 @@
       <span style="color:var(--text3);font-size:12px">to</span>
       <input type="date" id="an-to" class="fsm" style="padding:4px 8px" onchange="renderAnalytics()">
     </div>
-    <select class="fsm" id="an-group" onchange="renderAnalytics()">
+    <select class="fsm" id="an-group" onchange="anHiddenGroups=new Set();renderAnalytics()">
       <option value="combined">Combined</option>
       <option value="bytype">By Asset Type</option>
       <option value="bysymbol">By Symbol</option>
     </select>
-    <select class="fsm" id="an-chart" onchange="renderAnalytics()">
+    <select class="fsm" id="an-chart" onchange="anHiddenGroups=new Set();renderAnalytics()">
       <option value="cost">Cost Basis Over Time</option>
       <option value="value">Portfolio Value Over Time</option>
       <option value="pnl">Cumulative P&L</option>
@@ -393,6 +394,7 @@
   <!-- Main chart -->
   <div class="tw" style="margin-bottom:18px">
     <div class="th"><span class="tt" id="an-chart-title">PORTFOLIO VALUE OVER TIME</span></div>
+    <div id="an-legend-pills" style="display:none;flex-wrap:wrap;gap:6px;padding:10px 20px 0"></div>
     <div style="padding:20px;position:relative;height:340px">
       <canvas id="an-main-chart"></canvas>
     </div>
@@ -1025,7 +1027,8 @@ let superAccounts = JSON.parse(localStorage.getItem('pt_super')||'[]');
 let editingSuperAccountId = null;
 let propRentAnnual = true;   // true=annual, false=monthly
 let propDebtNet = false;     // false=gross debt, true=net (minus offsets)
-let portfolioView = 0; // 0=All, 1=Stocks, 2=Crypto
+let portfolioView = 0;
+let anHiddenGroups = new Set(); // groups hidden in analytics chart // 0=All, 1=Stocks, 2=Crypto
 let propRepayAnnual = false; // true=annual, false=monthly
 let editingDivId    = null;
 let hdSortKey = 'value_desc';
@@ -1161,7 +1164,7 @@ function notify(msg,type='ok'){
   const n=$('notif'); n.textContent=msg; n.className='notif show '+type;
   clearTimeout(n._t); n._t=setTimeout(()=>n.classList.remove('show'),3500);
 }
-function save(){ localStorage.setItem('pt_trades',JSON.stringify(trades)); localStorage.setItem('pt_prices',JSON.stringify(prices)); localStorage.setItem('pt_divs',JSON.stringify(dividends)); saveProps(); }
+function save(){ localStorage.setItem('pt_trades',JSON.stringify(trades)); setTimeout(diagnoseTrades,100); localStorage.setItem('pt_prices',JSON.stringify(prices)); localStorage.setItem('pt_divs',JSON.stringify(dividends)); saveProps(); }
 
 // ── DATE ─────────────────────────────────────────────────────────────
 function nd(s){
@@ -1471,7 +1474,14 @@ function displaySymbol(sym){
 function calcH(){
   const map={};
   // Sort trades by date so corporate actions apply in correct order
-  const sorted = [...trades].sort((a,b)=>a.date.localeCompare(b.date));
+  const sorted = [...trades].sort((a,b)=>{
+    const dateD = a.date.localeCompare(b.date);
+    if(dateD!==0) return dateD;
+    // Same date: ensure _from subtypes always process before _to
+    const aIsFrom = (a.subtype||'').endsWith('_from') ? -1 : 0;
+    const bIsFrom = (b.subtype||'').endsWith('_from') ? -1 : 0;
+    return aIsFrom - bIsFrom;
+  });
   for(const t of sorted){
     const s=t.symbol;
     if(!map[s]) map[s]={symbol:s,assetType:t.assetType,units:0,costBasis:0,source:t.source};
@@ -1486,17 +1496,25 @@ function calcH(){
       } else if(sub==='merger_to'||sub==='split_to'||sub==='rename_to'||sub==='spinoff_to'){
         // To-side: receive transferred cost basis from the from-symbol
         const fromSym = t.fromSymbol||'';
-        const fromEntry = fromSym && map[fromSym];
-        const transferredCost = fromEntry ? (fromEntry._caTransfer||0) : (+t.units * +t.price);
-        // Override takes priority if set
+        // Look up from-entry — also check if it already had _caTransfer stashed
+        const fromEntry = fromSym ? (map[fromSym] || null) : null;
         const allocPct = t.allocPct!=null ? +t.allocPct/100 : 1;
         let costToAdd;
         if(t.overrideCostBasis){
           costToAdd = +t.overrideCostBasis;
         } else if(sub==='spinoff_to'){
           costToAdd = fromEntry ? (fromEntry._caTransfer||0)*allocPct : +t.units * +t.price;
+        } else if(fromEntry && fromEntry._caTransfer != null){
+          // Normal path: from-side was processed first, cost was stashed
+          costToAdd = fromEntry._caTransfer||0;
+        } else if(fromEntry){
+          // From-entry exists but no stash — use its current cost basis
+          costToAdd = fromEntry.costBasis||0;
+          fromEntry.costBasis = 0;
+          fromEntry.units = 0;
         } else {
-          costToAdd = fromEntry ? (fromEntry._caTransfer||0) : +t.units * +t.price;
+          // No fromSymbol or not found — fall back to units*price (legacy)
+          costToAdd = +t.units * +t.price;
         }
         map[s].units += +t.units;
         map[s].costBasis += costToAdd;
@@ -1777,12 +1795,14 @@ function renderT(){
       return '<tr style="background:rgba(109,79,212,0.07)">'
         + '<td>' + t.date + '</td>'
         + '<td>' + sideTag + '</td>'
-        + '<td><b>' + t.symbol + '</b></td>'
+        + '<td><b>' + t.symbol + '</b>'+(t.fromSymbol&&t.fromSymbol!==t.symbol?'<span style="color:var(--text3);font-size:10px"> ('+t.fromSymbol+')</span>':'')+' </td>'
         + '<td>' + caTag + '</td>'
         + '<td style="text-align:right">' + nN(t.units,8) + '</td>'
         + '<td style="text-align:right;color:var(--text3)">' + (isFrom?'—':n2(t.price,dec(t.price))) + '</td>'
         + '<td colspan="3" style="color:var(--text3);font-size:11px">'
-        +   (isFrom ? 'Cost basis transferred out' : 'Cost basis transferred in') + '</td>'
+        +   (isFrom 
+            ? 'Cost basis out → ' + (t.fromSymbol||t.symbol)
+            : 'Cost basis in ← ' + (t.fromSymbol||'?')) + '</td>'
         + '<td style="color:var(--text3);font-size:10px">' + (t.source||'') + '</td>'
         + '<td style="white-space:nowrap;padding:4px 8px">'
         + '<button class="del-btn" onclick="delT(' + idxMap[t.id] + ')">&#10005;</button>'
@@ -1971,13 +1991,19 @@ const CA_CONFIG = {
     showRatio:false, showToUnits:true, showAlloc:true, showFromUnits:true,
     toSymPlaceholder:'e.g. SPINCO',
   },
+  worthless: {
+    fromLabel:'Symbol (delisted/bankrupt)', toLabel:'',
+    ratioLabel:'', ratioPlaceholder:'',
+    showRatio:false, showToUnits:false, showAlloc:false, showFromUnits:true,
+    toSymPlaceholder:'',
+  },
 };
 
 function setCaType(t){
   caType = t;
   document.querySelectorAll('.ca-pill').forEach(p=>{
     p.classList.toggle('active', p.textContent.toLowerCase().includes(
-      {merger:'merger',split:'split',rename:'rename',spinoff:'spin'}[t]
+      {merger:'merger',split:'split',rename:'rename',spinoff:'spin',worthless:'write'}[t]||t
     ));
   });
   const cfg = CA_CONFIG[t];
@@ -1996,6 +2022,12 @@ function setCaType(t){
     $('ca-to-sym').value = $('ca-from-sym').value;
     $('ca-to-sym').readOnly = true;
     $('ca-to-sym').style.opacity = '0.5';
+  } else if(t==='worthless'){
+    // Hide to-symbol row entirely for write-off
+    $('ca-to-sym').value = '';
+    $('ca-to-sym').readOnly = true;
+    $('ca-to-sym').style.opacity = '0';
+    $('ca-override-wrap').style.display = 'none';
   } else {
     $('ca-to-sym').readOnly = false;
     $('ca-to-sym').style.opacity = '';
@@ -2076,6 +2108,23 @@ function addCorporateAction(){
   const notes    = $('ca-notes').value.trim();
 
   if(!date||!fromSym){ notify('Date and From Symbol are required.','err'); return; }
+  if(caType==='worthless'){
+    // Write-off: record a $0 sell for all units → crystallises capital loss
+    const h = calcH().find(x=>x.symbol===fromSym);
+    const units = h ? h.units : (parseFloat($('ca-from-units').value)||0);
+    if(!units){ notify(`No holdings found for ${fromSym}.`,'err'); return; }
+    const writeOff = {
+      id:uid(), date, type:'sell', symbol:fromSym,
+      assetType: $('ca-at').value||'asx_stock',
+      units, price:0, fees:0, source:'manual',
+      notes:`Capital loss write-off — ${fromSym} delisted/worthless. Cost basis: $${n2(h?h.costBasis:0)}.`,
+      subtype:'', caLabel:'Write-off (Worthless)',
+    };
+    trades.push(writeOff);
+    save(); clearCaForm(); renderH(); renderT(); renderR();
+    notify(`✓ ${fromSym} written off — ${units.toFixed(4)} units at $0. Capital loss: $${n2(h?h.costBasis:0)}.`);
+    return;
+  }
   if(caType!=='rename'&&caType!=='spinoff'&&!ratio){ notify('Enter a conversion ratio.','err'); return; }
   if(caType==='spinoff'&&(!toUnitsField||!alloc)){ notify('Enter new units and cost basis % for spin-off.','err'); return; }
   if(!toSym&&caType!=='split'){ notify('Enter the new symbol.','err'); return; }
@@ -2121,6 +2170,14 @@ function addCorporateAction(){
     ...(overrideCost>0 ? {overrideCostBasis:overrideCost} : {}),
   };
 
+  // Warn if a _from trade already exists for this symbol on same date
+  const existingFrom = trades.find(t=>
+    t.type==='corporate_action' && t.symbol===fromSym &&
+    (t.subtype||'').endsWith('_from') && t.date===date);
+  if(existingFrom){
+    if(!confirm(`⚠ There is already a ${CA_LABELS[caType]} recorded for ${fromSym} on ${date}.\n\nAdding another may cause duplicate cost basis issues.\n\nContinue anyway?`))
+      return;
+  }
   trades.push(fromTrade);
   if(caType!=='split') trades.push(toTrade);
   else {
@@ -2138,6 +2195,7 @@ function addCorporateAction(){
 const CA_LABELS = {
   merger:'Merger/Conversion', split:'Stock Split',
   rename:'Ticker Rename',     spinoff:'Spin-off',
+  worthless:'Write-off (Worthless)',
 };
 
 function clearCaForm(){
@@ -2622,6 +2680,12 @@ function renderAnalytics(){
   renderPerformers(holdings);
 }
 
+function toggleAnGroup(g){
+  if(anHiddenGroups.has(g)) anHiddenGroups.delete(g);
+  else anHiddenGroups.add(g);
+  renderAnalytics();
+}
+
 function renderMainChart(filtered, groupBy, chartType, holdings){
   if(!filtered.length){ mkChart('an-main-chart',{type:'line',data:{labels:[],datasets:[]}}); return; }
 
@@ -2686,8 +2750,34 @@ function renderMainChart(filtered, groupBy, chartType, holdings){
       for(const t of monthTrades){
         const s=t.symbol;
         if(!costMap[s]) costMap[s]={units:0,cost:0};
-        if(t.type==='buy'){ costMap[s].units+=+t.units; costMap[s].cost+=(+t.units * +t.price)+(+t.fees||0); }
-        else { const r=costMap[s].units>0?+t.units/costMap[s].units:0; costMap[s].cost-=costMap[s].cost*r; costMap[s].units-=+t.units; }
+        if(t.type==='buy'||t.type==='drp'){
+          costMap[s].units+=+t.units; costMap[s].cost+=(+t.units * +t.price)+(+t.fees||0);
+        } else if(t.type==='corporate_action'){
+          const sub = t.subtype||'';
+          if(sub==='merger_from'||sub==='rename_from'||sub==='split_from'||sub==='spinoff_from'){
+            // Stash cost, zero out from-symbol
+            costMap[s]._caStash = costMap[s].cost;
+            costMap[s].units    = 0;
+            costMap[s].cost     = 0;
+          } else if(sub==='merger_to'||sub==='rename_to'||sub==='spinoff_to'){
+            // Transfer cost from from-symbol
+            const fromSym = t.fromSymbol||'';
+            const fromEntry = fromSym && costMap[fromSym];
+            const allocPct = t.allocPct!=null ? +t.allocPct/100 : 1;
+            const transferCost = fromEntry ? (fromEntry._caStash||fromEntry.cost||0)*allocPct : 0;
+            if(fromEntry && sub==='spinoff_to') fromEntry.cost = (fromEntry._caStash||0)*(1-allocPct);
+            if(!costMap[s]) costMap[s]={units:0,cost:0};
+            costMap[s].units += +t.units;
+            costMap[s].cost  += t.overrideCostBasis ? +t.overrideCostBasis : transferCost;
+          } else if(sub==='split_to'){
+            // Split: same symbol, just update units
+            costMap[s].units = +t.units; // to-side has the new unit count
+          }
+        } else if(t.type==='sell'){
+          const r=costMap[s].units>0?+t.units/costMap[s].units:0;
+          costMap[s].cost-=costMap[s].cost*r;
+          costMap[s].units-=+t.units;
+        }
       }
       const totalCost = Object.values(costMap).reduce((s,h)=>s+h.cost,0);
       if(chartType==='cost') return +totalCost.toFixed(2);
@@ -2711,16 +2801,43 @@ function renderMainChart(filtered, groupBy, chartType, holdings){
   });
 
   const yLabel = chartType==='pnl'?'P&L (AUD)':'AUD';
+  // ── Build toggleable legend pills ──────────────────────────
+  const pillsEl = $('an-legend-pills');
+  if(pillsEl && groupBy !== 'combined'){
+    pillsEl.style.display = 'flex';
+    pillsEl.innerHTML = groups.map((g,i) => {
+      const col   = PALETTE[i % PALETTE.length];
+      const active = !anHiddenGroups.has(g);
+      return `<button onclick="toggleAnGroup('${g.replace(/'/g,"\\'")}')"
+        style="display:flex;align-items:center;gap:5px;padding:3px 10px;
+               border-radius:20px;border:1px solid ${active?col:'#333'};
+               background:${active?col+'22':'transparent'};
+               color:${active?col:'var(--text3)'};
+               font-size:11px;font-family:var(--mono);cursor:pointer;
+               opacity:${active?'1':'0.45'};transition:all .15s">
+        <span style="width:8px;height:8px;border-radius:50%;background:${active?col:'#555'};flex-shrink:0"></span>
+        ${g}</button>`;
+    }).join('');
+  } else if(pillsEl){
+    pillsEl.style.display = 'none';
+  }
+
+  // Filter datasets based on hidden groups
+  const visibleDatasets = datasets.map((ds, i) => ({
+    ...ds,
+    hidden: anHiddenGroups.has(groups[i]),
+  }));
+
   mkChart('an-main-chart',{
     type:'line',
-    data:{ labels:allDates, datasets },
+    data:{ labels:allDates, datasets:visibleDatasets },
     options:{ responsive:true, maintainAspectRatio:false,
       interaction:{ mode:'index', intersect:false },
       scales:{
         x:{ ticks:{color:'#4a5568', maxTicksLimit:12} },
         y:{ ticks:{color:'#4a5568', callback:v=>'$'+v.toLocaleString()}, grid:{color:'#1f2733'} }
       },
-      plugins:{ legend:{labels:{color:'#8899aa'}},
+      plugins:{ legend:{display:false},
         tooltip:{ callbacks:{ label:ctx=>' '+ctx.dataset.label+': $'+ctx.parsed.y.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2}) } }
       }
     }
@@ -3083,6 +3200,35 @@ function importDividendFile(input){
 }
 
 // ── DUPLICATE CHECK ───────────────────────────────────────────────────
+function diagnoseTrades(){
+  // Check for common data issues and notify the user
+  const issues = [];
+  // Check: any symbol has merger_from but no matching merger_to fromSymbol
+  const mergerFroms = trades.filter(t=>t.type==='corporate_action'&&t.subtype==='merger_from');
+  const mergerTos   = trades.filter(t=>t.type==='corporate_action'&&t.subtype==='merger_to');
+  mergerFroms.forEach(mf=>{
+    const hasPair = mergerTos.some(mt=>mt.fromSymbol===mf.symbol&&mt.date===mf.date);
+    if(!hasPair) issues.push(`Merger: ${mf.symbol} has merger_from on ${mf.date} but no matching merger_to (missing fromSymbol?)`);
+  });
+  // Check: symbol appears in both regular trades AND as merger_from on same date
+  mergerFroms.forEach(mf=>{
+    const laterBuys = trades.filter(t=>t.symbol===mf.symbol&&t.type==='buy'&&t.date>mf.date);
+    if(laterBuys.length) issues.push(`Warning: ${mf.symbol} has buys AFTER merger_from on ${mf.date} — were these meant for ${mergerTos.find(mt=>mt.date===mf.date)?.symbol||'new symbol'}?`);
+  });
+  // Check: duplicate corporate actions on same symbol+date+subtype
+  const seen = {};
+  trades.filter(t=>t.type==='corporate_action').forEach(t=>{
+    const key = t.symbol+'|'+t.date+'|'+t.subtype;
+    if(seen[key]) issues.push(`Duplicate corporate action: ${t.symbol} ${t.subtype} on ${t.date}`);
+    seen[key] = true;
+  });
+  if(issues.length){
+    issues.forEach(i=>console.warn('[Portfolio] '+i));
+    notify('⚠ Trade data issues detected — check console for details. This may cause wrong P&L.','err');
+  }
+  return issues;
+}
+
 function isTradeDuplicate(t){
   return trades.some(x =>
     x.date   === t.date &&
@@ -3971,6 +4117,17 @@ let syncStatus = 'idle'; // idle | syncing | ok | error | conflict
 let suCombinedColor = localStorage.getItem('su_combined_color') || '#ffffff';
 let suCardView = 0; // 0=combined, 1..n = account index
 
+function toggleSuperSection(headerEl){
+  const body   = headerEl.nextElementSibling;
+  const icon   = headerEl.querySelector('span');
+  if(!body || !icon) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display  = isOpen ? 'none' : '';
+  body.style.marginTop = isOpen ? '' : '10px';
+  icon.textContent    = isOpen ? '+' : '−';
+  icon.style.color    = isOpen ? 'var(--text3)' : 'var(--blue)';
+}
+
 function saveSuperAccounts(){ localStorage.setItem('pt_super', JSON.stringify(superAccounts)); }
 
 function toggleSuperForm(forceOpen){
@@ -4227,7 +4384,6 @@ function renderSuperAccounts(){
   const PREV2_FY= CUR_FY - 2;
   const COLORS  = ['#3b82f6','#10b981','#f59e0b','#ef4444','#a855f7','#ec4899','#14b8a6'];
 
-  // ROI calc (Modified Dietz, concessional only at 85%)
   function calcROI(startBal, endBal, empCC, perCC){
     if(!startBal || !endBal) return null;
     const afterTaxCC = ((empCC||0) + (perCC||0)) * 0.85;
@@ -4242,6 +4398,17 @@ function renderSuperAccounts(){
      <div class="${cls}" style="font-family:var(--mono);font-size:13px;font-weight:600">${val}</div>
      ${sub?`<div style="font-size:10px;color:var(--text3);margin-top:1px">${sub}</div>`:''}</div>`;
 
+  // Collapsible section helper
+  const collapsible = (title, body) => `
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px;margin-top:12px">
+        <div onclick="toggleSuperSection(this)" style="font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
+          ${title}<span style="font-size:16px;color:var(--text3);line-height:1;font-weight:300">+</span>
+        </div>
+        <div class="su-section-body" style="display:none;margin-top:12px">
+          ${body}
+        </div>
+      </div>`;
+
   wrap.innerHTML = superAccounts.map((a, i) => {
     const color    = a.color || COLORS[i % COLORS.length];
     const curBal   = +a.balance || 0;
@@ -4249,7 +4416,6 @@ function renderSuperAccounts(){
     const prev2Bal = a.fyData && a.fyData[PREV2_FY] ? +a.fyData[PREV2_FY] : null;
     const contrib  = a.contrib || {};
 
-    // Contributions
     const empCC_cur  = +contrib.empCC_cur  || 0;
     const perCC_cur  = +contrib.perCC_cur  || 0;
     const ncc_cur    = +contrib.ncc_cur    || 0;
@@ -4257,79 +4423,79 @@ function renderSuperAccounts(){
     const perCC_prev = +contrib.perCC_prev || 0;
     const ncc_prev   = +contrib.ncc_prev   || 0;
 
-    // ROI calculations
-    const roi_cur  = prevBal  !== null ? calcROI(prevBal, curBal,  empCC_cur,  perCC_cur)  : null;
+    const roi_cur  = prevBal  !== null ? calcROI(prevBal,  curBal,  empCC_cur,  perCC_cur)  : null;
     const roi_prev = prev2Bal !== null ? calcROI(prev2Bal, prevBal, empCC_prev, perCC_prev) : null;
 
-    const fmtROI = r => r === null ? '—'
+    const fmtROI  = r => r === null ? '—'
       : `<span class="${r.roi>=0?'pos':'neg'}">${r.roi>=0?'+':''}${r.roi.toFixed(2)}%</span>`;
     const fmtGain = r => r === null ? '—'
       : `<span class="${r.gain>=0?'pos':'neg'}">${r.gain>=0?'+':''}$${n2(r.gain)}</span>`;
 
-    // Contribution summary rows
     const contribCur  = empCC_cur  + perCC_cur;
     const contribPrev = empCC_prev + perCC_prev;
     const hasContrib  = contribCur || contribPrev || ncc_cur || ncc_prev;
 
-    const contribPanel = hasContrib ? `
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px;margin-top:12px">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">CONTRIBUTIONS</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
-          <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">FY${CUR_FY} (in progress)</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${stat('Employer CC', empCC_cur ? '$'+n2(empCC_cur) : '—')}
-              ${stat('Personal CC', perCC_cur ? '$'+n2(perCC_cur) : '—')}
-              ${stat('Total CC', contribCur ? '$'+n2(contribCur) : '—')}
-              ${stat('After-tax (85%)', contribCur ? '$'+n2(contribCur*0.85) : '—', 'pos')}
-              ${ncc_cur ? stat('Non-Concessional', '$'+n2(ncc_cur)) : ''}
+    // ── CONTRIBUTIONS panel ─────────────────────────────────────
+    const contribBody = hasContrib ? `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+            <div>
+              <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${CUR_FY} — in progress</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                ${stat('Employer CC',     empCC_cur  ? '$'+n2(empCC_cur)          : '—')}
+                ${stat('Personal CC',     perCC_cur  ? '$'+n2(perCC_cur)          : '—')}
+                ${stat('Total CC',        contribCur ? '$'+n2(contribCur)         : '—')}
+                ${stat('After-tax (85%)', contribCur ? '$'+n2(contribCur*0.85)    : '—', 'pos')}
+                ${ncc_cur  ? stat('Non-Concessional', '$'+n2(ncc_cur))            : ''}
+              </div>
             </div>
-          </div>
-          <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">FY${PREV_FY} (completed)</div>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${stat('Employer CC', empCC_prev ? '$'+n2(empCC_prev) : '—')}
-              ${stat('Personal CC', perCC_prev ? '$'+n2(perCC_prev) : '—')}
-              ${stat('Total CC', contribPrev ? '$'+n2(contribPrev) : '—')}
-              ${stat('After-tax (85%)', contribPrev ? '$'+n2(contribPrev*0.85) : '—', 'pos')}
-              ${ncc_prev ? stat('Non-Concessional', '$'+n2(ncc_prev)) : ''}
+            <div>
+              <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${PREV_FY} — completed</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                ${stat('Employer CC',     empCC_prev  ? '$'+n2(empCC_prev)         : '—')}
+                ${stat('Personal CC',     perCC_prev  ? '$'+n2(perCC_prev)         : '—')}
+                ${stat('Total CC',        contribPrev ? '$'+n2(contribPrev)        : '—')}
+                ${stat('After-tax (85%)', contribPrev ? '$'+n2(contribPrev*0.85)   : '—', 'pos')}
+                ${ncc_prev ? stat('Non-Concessional', '$'+n2(ncc_prev))            : ''}
+              </div>
             </div>
-          </div>
-        </div>
-      </div>` : '';
+          </div>` :
+      `<div style="color:var(--text3);font-size:11px">No contributions entered yet. Edit this account and fill in the contribution fields above.</div>`;
 
-    // ROI panel
-    const roiPanel = (roi_cur || roi_prev) ? `
-      <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px;margin-top:12px">
-        <div style="font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px">INVESTMENT RETURN (MODIFIED DIETZ)</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+    const contribPanel = collapsible('CONTRIBUTIONS', contribBody);
+
+    // ── INVESTMENT RETURN panel ──────────────────────────────────
+    const needsFYData = prevBal === null;
+    const roiBody = needsFYData
+      ? `<div style="color:var(--text3);font-size:11px">Enter FY${PREV_FY} balance in the form above to calculate investment return.</div>`
+      : `<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
           <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">FY${CUR_FY} · Current vs FY${PREV_FY}</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${CUR_FY} — Current vs FY${PREV_FY} end</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${stat('Start (FY'+PREV_FY+')', prevBal!==null ? '$'+n2(prevBal) : '—')}
-              ${stat('End (Current)', '$'+n2(curBal))}
-              ${stat('After-tax CC', roi_cur ? '$'+n2(roi_cur.afterTaxCC) : '—')}
-              ${stat('Inv. Gain', roi_cur ? fmtGain(roi_cur) : '—')}
-              ${stat('Avg Balance', roi_cur ? '$'+n2((prevBal+curBal)/2) : '—')}
-              ${stat('ROI %', roi_cur ? fmtROI(roi_cur) : '—')}
+              ${stat('Start (FY'+PREV_FY+')',  '$'+n2(prevBal))}
+              ${stat('End (Current)',           '$'+n2(curBal))}
+              ${stat('After-tax CC',            roi_cur ? '$'+n2(roi_cur.afterTaxCC)       : '$0.00')}
+              ${stat('Inv. Gain',               roi_cur ? fmtGain(roi_cur)                  : '$'+n2(curBal-prevBal))}
+              ${stat('Avg Balance',             '$'+n2((prevBal+curBal)/2))}
+              ${stat('ROI %',                   roi_cur ? fmtROI(roi_cur)                   : '—')}
             </div>
           </div>
           <div>
-            <div style="font-size:10px;color:var(--text3);margin-bottom:6px;font-family:var(--mono)">FY${PREV_FY} · FY${PREV_FY} vs FY${PREV2_FY}</div>
+            <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${PREV_FY} — FY${PREV_FY} vs FY${PREV2_FY} end</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${stat('Start (FY'+PREV2_FY+')', prev2Bal!==null ? '$'+n2(prev2Bal) : '—')}
-              ${stat('End (FY'+PREV_FY+')', prevBal!==null ? '$'+n2(prevBal) : '—')}
-              ${stat('After-tax CC', roi_prev ? '$'+n2(roi_prev.afterTaxCC) : '—')}
-              ${stat('Inv. Gain', roi_prev ? fmtGain(roi_prev) : '—')}
-              ${stat('Avg Balance', roi_prev ? '$'+n2((prev2Bal+prevBal)/2) : '—')}
-              ${stat('ROI %', roi_prev ? fmtROI(roi_prev) : '—')}
+              ${prev2Bal !== null ? stat('Start (FY'+PREV2_FY+')', '$'+n2(prev2Bal)) : stat('Start (FY'+PREV2_FY+')', '—')}
+              ${stat('End (FY'+PREV_FY+')',      '$'+n2(prevBal))}
+              ${stat('After-tax CC',            roi_prev ? '$'+n2(roi_prev.afterTaxCC)      : '$0.00')}
+              ${stat('Inv. Gain',               roi_prev ? fmtGain(roi_prev)                : '—')}
+              ${stat('Avg Balance',             prev2Bal !== null ? '$'+n2((prev2Bal+prevBal)/2) : '—')}
+              ${stat('ROI %',                   roi_prev ? fmtROI(roi_prev)                 : '—')}
             </div>
           </div>
         </div>
         <div style="margin-top:10px;font-size:10px;color:var(--text3);font-family:var(--mono)">
           Investment gain = Ending − Starting − after-tax concessional contributions. Average balance used as denominator (Modified Dietz).
-        </div>
-      </div>` : '';
+        </div>`;
+
+    const roiPanel = collapsible('INVESTMENT RETURN (MODIFIED DIETZ)', roiBody);
 
     return `<div class="fs" style="margin-bottom:14px">
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
@@ -4354,6 +4520,7 @@ function renderSuperAccounts(){
     </div>`;
   }).join('');
 }
+
 
 function renderSuperChart(){
   const canvas = $('su-chart');
@@ -4478,6 +4645,43 @@ function syncSuperColorPickers(){
 // syncDevice = friendly name for this device
 // pt_sync_gist_id = stored after first push (the Gist ID)
 const GIST_FILENAME = 'portfolio_tracker_data.json';
+
+async function syncAutoLoad(){
+  const gistId = localStorage.getItem('pt_sync_gist_id');
+  if(!syncKey || !gistId) return;  // not configured — skip silently
+  setSyncStatus('Syncing…', 'var(--blue)');
+  try {
+    const gist = await gistRequest('GET', '/gists/'+gistId);
+    const file = gist.files[GIST_FILENAME];
+    if(!file) return;
+    let raw = file.content;
+    if(file.truncated){
+      const r = await fetch(file.raw_url, {headers:{'Authorization':'token '+syncKey}});
+      raw = await r.text();
+    }
+    const remote = JSON.parse(raw);
+    const remoteSavedAt = remote.savedAt;
+    const localSavedAt  = localStorage.getItem('pt_last_sync');
+    // Only auto-apply if cloud is strictly newer than last known sync
+    // This avoids overwriting local changes made since last sync
+    const cloudIsNewer = !localSavedAt || new Date(remoteSavedAt) > new Date(localSavedAt);
+    if(cloudIsNewer){
+      applyRemoteData(remote);
+      localStorage.setItem('pt_last_sync', remoteSavedAt);
+      localStorage.setItem('pt_sync_gist_id', gistId);
+      const ts = new Date(remoteSavedAt).toLocaleString();
+      setSyncStatus('✓ Auto-synced '+ts, 'var(--green)');
+    } else {
+      setSyncStatus('✓ Up to date', 'var(--green)');
+      setTimeout(()=>setSyncStatus('Last sync: '+new Date(localSavedAt).toLocaleString(),'var(--text3)'), 3000);
+    }
+  } catch(e){
+    // Silent fail on auto-sync — don't interrupt the user
+    setSyncStatus('⚠ Auto-sync failed', 'var(--text3)');
+    console.warn('Auto-sync failed:', e.message);
+  }
+}
+
 
 function saveSyncKey(v){
   syncKey = v.trim();
@@ -6625,6 +6829,7 @@ const dvd=$('dv-date'); if(dvd&&!dvd.value) dvd.value=new Date().toISOString().s
 refreshAllBrokerSelects();
 renderH(); renderT(); renderR();
 const wcBox = $('worker-code-box');
+setTimeout(syncAutoLoad, 800); // auto-pull on page open if configured
 if(wcBox) wcBox.value = WORKER_CODE;
 
 // ── Pure-JS PDF extractor (no CDN, replaces PDF.js) ─────────────────────
