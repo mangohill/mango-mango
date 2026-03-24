@@ -1,8 +1,8 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; script-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://api.github.com https://raw.githubusercontent.com https://api.coingecko.com https://*.workers.dev https://*.cloudflare.com https://query1.finance.yahoo.com https://www.monashinvestors.com; img-src 'self' data:;">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Portfolio Tracker v3</title>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -98,15 +98,14 @@
 
 /* Corporate Action pills */
 .ca-pill {
-padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
-cursor: pointer; border: 1px solid var(–bo);
-background: var(–bg2); color: var(–text2); transition: all 0.15s;
+  padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: 1px solid var(--bo);
+  background: var(--bg2); color: var(--text2); transition: all 0.15s;
 }
 .ca-pill.active {
-border-color: var(–gold); background: var(–gold); color: #0a0f1e;
+  border-color: var(--gold); background: var(--gold); color: #0a0f1e;
 }
 </style>
-
 </head>
 <body>
 
@@ -137,7 +136,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 <div class="main">
 
 <!-- PORTFOLIO -->
-
 <div class="panel active" id="panel-portfolio">
   <div class="cards" id="portfolio-cards" onclick="cyclePortfolioView()" style="cursor:pointer" title="Click to cycle: All → Stocks → Crypto">
     <div class="card"><div class="card-label" id="cl-mv">Market Value</div><div class="card-value neu" id="cv">$0.00</div><div class="card-sub" id="cs-mv">AUD · all assets</div></div>
@@ -168,7 +166,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 </div>
 
 <!-- TRADES -->
-
 <div class="panel" id="panel-trades">
 
   <div class="fs" style="margin-bottom:12px">
@@ -177,6 +174,7 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
       <span id="sec-toggle-import" style="font-size:18px;color:var(--blue);font-family:var(--mono);line-height:1">−</span>
     </div>
     <div id="sec-body-import" style="margin-top:14px">
+
 
   <div class="fmt-pills">
     <div class="fmt-pill"><b>CommSec</b> — Cash ledger · Details: "B/S QTY SYM @ PRICE"</div>
@@ -204,10 +202,8 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     </div>
   </div>
 
-```
-</div>
-```
-
+  
+    </div>
   </div>
   <div class="fs" style="margin-bottom:12px">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="toggleSection('manual')">
@@ -216,32 +212,30 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     </div>
     <div id="sec-body-manual" style="margin-top:14px;display:none">
 
-```
-<div class="fg">
-  <div class="fgi"><label class="fl">Date</label><input class="fi" type="date" id="fd"></div>
-  <div class="fgi"><label class="fl">Side</label><select class="fi" id="fsi"><option value="buy">BUY</option><option value="sell">SELL</option></select></div>
-  <div class="fgi"><label class="fl">Symbol</label><input class="fi" type="text" id="fsy" placeholder="e.g. BTC, DHHF, CBA" oninput="this.value=this.value.toUpperCase()"></div>
-  <div class="fgi"><label class="fl">Asset Type</label><select class="fi" id="fat"><option value="crypto">Crypto</option><option value="stock">Stock</option><option value="etf">ETF</option><option value="lic">LIC</option><option value="reit">REIT</option><option value="bond">Bond / Fixed Income</option><option value="commodity">Commodity</option><option value="managed">Managed Fund</option><option value="super">Super / Pension</option></select></div>
-  <div class="fgi"><label class="fl">Units</label><input class="fi" type="number" id="fun" placeholder="0" step="any" min="0" oninput="prevw()"></div>
-  <div class="fgi"><label class="fl">Price per Unit (AUD)</label><input class="fi" type="number" id="fpr" placeholder="0.00" step="any" min="0" oninput="prevw()"></div>
-  <div class="fgi"><label class="fl">Fees / Brokerage (AUD)</label><input class="fi" type="number" id="ffe" placeholder="0.00" step="any" min="0" value="0" oninput="prevw()"></div>
-  <div class="fgi"><label class="fl">Source / Broker</label>
-    <div style="display:flex;gap:6px">
-      <select class="fi" id="fso" style="flex:1"></select>
-      <button class="btn" onclick="promptAddBroker('fso')" title="Add custom broker" style="padding:4px 10px;flex-shrink:0">+</button>
-    </div></div>
-  <div class="fgi" style="grid-column:1/-1"><label class="fl">Notes</label><input class="fi" type="text" id="fno" placeholder="Optional"></div>
-</div>
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-  <button class="btn btn-g" onclick="addTrade()">ADD TRADE</button>
-  <button class="btn" onclick="clearForm()">CLEAR</button>
-  <span style="font-family:var(--mono);font-size:12px;color:var(--text2)" id="fpv"></span>
-</div>
-
-</div>
-```
-
+    <div class="fg">
+      <div class="fgi"><label class="fl">Date</label><input class="fi" type="date" id="fd"></div>
+      <div class="fgi"><label class="fl">Side</label><select class="fi" id="fsi"><option value="buy">BUY</option><option value="sell">SELL</option></select></div>
+      <div class="fgi"><label class="fl">Symbol</label><input class="fi" type="text" id="fsy" placeholder="e.g. BTC, DHHF, CBA" oninput="this.value=this.value.toUpperCase()"></div>
+      <div class="fgi"><label class="fl">Asset Type</label><select class="fi" id="fat"><option value="crypto">Crypto</option><option value="stock">Stock</option><option value="etf">ETF</option><option value="lic">LIC</option><option value="reit">REIT</option><option value="bond">Bond / Fixed Income</option><option value="commodity">Commodity</option><option value="managed">Managed Fund</option><option value="super">Super / Pension</option></select></div>
+      <div class="fgi"><label class="fl">Units</label><input class="fi" type="number" id="fun" placeholder="0" step="any" min="0" oninput="prevw()"></div>
+      <div class="fgi"><label class="fl">Price per Unit (AUD)</label><input class="fi" type="number" id="fpr" placeholder="0.00" step="any" min="0" oninput="prevw()"></div>
+      <div class="fgi"><label class="fl">Fees / Brokerage (AUD)</label><input class="fi" type="number" id="ffe" placeholder="0.00" step="any" min="0" value="0" oninput="prevw()"></div>
+      <div class="fgi"><label class="fl">Source / Broker</label>
+        <div style="display:flex;gap:6px">
+          <select class="fi" id="fso" style="flex:1"></select>
+          <button class="btn" onclick="promptAddBroker('fso')" title="Add custom broker" style="padding:4px 10px;flex-shrink:0">+</button>
+        </div></div>
+      <div class="fgi" style="grid-column:1/-1"><label class="fl">Notes</label><input class="fi" type="text" id="fno" placeholder="Optional"></div>
+    </div>
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-g" onclick="addTrade()">ADD TRADE</button>
+      <button class="btn" onclick="clearForm()">CLEAR</button>
+      <span style="font-family:var(--mono);font-size:12px;color:var(--text2)" id="fpv"></span>
+    </div>
+  
+    </div>
   </div>
+
 
   <div class="fs" style="margin-bottom:12px">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="toggleSection('ca')">
@@ -250,74 +244,71 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     </div>
     <div id="sec-body-ca" style="display:none;margin-top:14px">
 
-```
-<p style="color:var(--text3);font-size:12px;margin:0 0 14px">
-  Record mergers, splits, renames and spin-offs. Cost basis transfers automatically — no CGT event is recorded.
-</p>
+    <p style="color:var(--text3);font-size:12px;margin:0 0 14px">
+      Record mergers, splits, renames and spin-offs. Cost basis transfers automatically — no CGT event is recorded.
+    </p>
 
-<!-- Action type selector -->
-<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="ca-type-pills">
-  <button class="ca-pill active" onclick="setCaType('merger')">🔀 Merger / Conversion</button>
-  <button class="ca-pill" onclick="setCaType('split')">✂️ Stock Split</button>
-  <button class="ca-pill" onclick="setCaType('rename')">🏷️ Ticker Rename</button>
-  <button class="ca-pill" onclick="setCaType('spinoff')">🌱 Spin-off</button>
-  <button class="ca-pill" onclick="setCaType('worthless')">💀 Write-off (Worthless)</button>
-</div>
+    <!-- Action type selector -->
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px" id="ca-type-pills">
+      <button class="ca-pill active" onclick="setCaType('merger')">🔀 Merger / Conversion</button>
+      <button class="ca-pill" onclick="setCaType('split')">✂️ Stock Split</button>
+      <button class="ca-pill" onclick="setCaType('rename')">🏷️ Ticker Rename</button>
+      <button class="ca-pill" onclick="setCaType('spinoff')">🌱 Spin-off</button>
+      <button class="ca-pill" onclick="setCaType('worthless')">💀 Write-off (Worthless)</button>
+    </div>
 
-<div class="fg" id="ca-form">
-  <div class="fgi"><label class="fl">Date</label>
-    <input class="fi" type="date" id="ca-date"></div>
+    <div class="fg" id="ca-form">
+      <div class="fgi"><label class="fl">Date</label>
+        <input class="fi" type="date" id="ca-date"></div>
 
-  <div class="fgi"><label class="fl" id="ca-from-label">From Symbol</label>
-    <input class="fi" type="text" id="ca-from-sym" placeholder="e.g. MAAT" oninput="this.value=this.value.toUpperCase();caAutoFillUnits();caPreview()"></div>
+      <div class="fgi"><label class="fl" id="ca-from-label">From Symbol</label>
+        <input class="fi" type="text" id="ca-from-sym" placeholder="e.g. MAAT" oninput="this.value=this.value.toUpperCase();caAutoFillUnits();caPreview()"></div>
 
-  <div class="fgi" id="ca-from-units-wrap"><label class="fl">From Units (held)</label>
-    <input class="fi" type="number" id="ca-from-units" placeholder="auto-filled from holdings" step="any" oninput="caPreview()"></div>
+      <div class="fgi" id="ca-from-units-wrap"><label class="fl">From Units (held)</label>
+        <input class="fi" type="number" id="ca-from-units" placeholder="auto-filled from holdings" step="any" oninput="caPreview()"></div>
 
-  <div class="fgi"><label class="fl" id="ca-to-label">To Symbol</label>
-    <input class="fi" type="text" id="ca-to-sym" placeholder="e.g. MAIF" oninput="this.value=this.value.toUpperCase();caPreview()"></div>
+      <div class="fgi"><label class="fl" id="ca-to-label">To Symbol</label>
+        <input class="fi" type="text" id="ca-to-sym" placeholder="e.g. MAIF" oninput="this.value=this.value.toUpperCase();caPreview()"></div>
 
-  <div class="fgi" id="ca-ratio-wrap"><label class="fl" id="ca-ratio-label">Conversion Ratio (new per old)</label>
-    <input class="fi" type="number" id="ca-ratio" placeholder="e.g. 1.0 for 1:1" step="any" min="0" oninput="caPreview()"></div>
+      <div class="fgi" id="ca-ratio-wrap"><label class="fl" id="ca-ratio-label">Conversion Ratio (new per old)</label>
+        <input class="fi" type="number" id="ca-ratio" placeholder="e.g. 1.0 for 1:1" step="any" min="0" oninput="caPreview()"></div>
 
-  <div class="fgi" id="ca-to-units-wrap" style="display:none"><label class="fl">To Units (result)</label>
-    <input class="fi" type="number" id="ca-to-units" placeholder="calculated" step="any" oninput="caPreview()"></div>
+      <div class="fgi" id="ca-to-units-wrap" style="display:none"><label class="fl">To Units (result)</label>
+        <input class="fi" type="number" id="ca-to-units" placeholder="calculated" step="any" oninput="caPreview()"></div>
 
-  <div class="fgi" id="ca-alloc-wrap" style="display:none"><label class="fl">Cost Basis % to New Ticker</label>
-    <input class="fi" type="number" id="ca-alloc" placeholder="e.g. 30" step="any" min="0" max="100" oninput="caPreview()"></div>
+      <div class="fgi" id="ca-alloc-wrap" style="display:none"><label class="fl">Cost Basis % to New Ticker</label>
+        <input class="fi" type="number" id="ca-alloc" placeholder="e.g. 30" step="any" min="0" max="100" oninput="caPreview()"></div>
 
-  <div class="fgi" id="ca-override-wrap" style="display:none">
-    <label class="fl">Override Cost Basis (AUD) <span style="color:var(--text3);font-weight:400;font-size:11px">— leave blank to auto-transfer</span></label>
-    <input class="fi" type="number" id="ca-override" placeholder="e.g. 13384.86" step="any" min="0" oninput="caPreview()">
-  </div>
+      <div class="fgi" id="ca-override-wrap" style="display:none">
+        <label class="fl">Override Cost Basis (AUD) <span style="color:var(--text3);font-weight:400;font-size:11px">— leave blank to auto-transfer</span></label>
+        <input class="fi" type="number" id="ca-override" placeholder="e.g. 13384.86" step="any" min="0" oninput="caPreview()">
+      </div>
 
-  <div class="fgi"><label class="fl">Asset Type (new)</label>
-    <select class="fi" id="ca-at">
-      <option value="etf">ETF</option><option value="lic">LIC</option>
-      <option value="stock">Stock</option><option value="managed">Managed Fund</option>
-      <option value="reit">REIT</option><option value="crypto">Crypto</option>
-      <option value="bond">Bond</option><option value="commodity">Commodity</option>
-      <option value="super">Super / Pension</option>
-    </select></div>
+      <div class="fgi"><label class="fl">Asset Type (new)</label>
+        <select class="fi" id="ca-at">
+          <option value="etf">ETF</option><option value="lic">LIC</option>
+          <option value="stock">Stock</option><option value="managed">Managed Fund</option>
+          <option value="reit">REIT</option><option value="crypto">Crypto</option>
+          <option value="bond">Bond</option><option value="commodity">Commodity</option>
+          <option value="super">Super / Pension</option>
+        </select></div>
 
-  <div class="fgi" style="grid-column:1/-1"><label class="fl">Notes</label>
-    <input class="fi" type="text" id="ca-notes" placeholder="Optional"></div>
-</div>
+      <div class="fgi" style="grid-column:1/-1"><label class="fl">Notes</label>
+        <input class="fi" type="text" id="ca-notes" placeholder="Optional"></div>
+    </div>
 
-<!-- Preview -->
-<div id="ca-preview" style="background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:12px;display:none">
-  <div style="font-weight:700;color:var(--text1);margin-bottom:6px">📋 Preview</div>
-  <div id="ca-preview-text" style="color:var(--text2);line-height:1.8"></div>
-</div>
+    <!-- Preview -->
+    <div id="ca-preview" style="background:var(--bg2);border:1px solid var(--bo);border-radius:8px;padding:12px 16px;margin:12px 0;font-size:12px;display:none">
+      <div style="font-weight:700;color:var(--text1);margin-bottom:6px">📋 Preview</div>
+      <div id="ca-preview-text" style="color:var(--text2);line-height:1.8"></div>
+    </div>
 
-<div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-  <button class="btn btn-g" onclick="addCorporateAction()">RECORD ACTION</button>
-  <button class="btn" onclick="clearCaForm()">CLEAR</button>
-</div>
-
-</div>
-```
-
+    <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+      <button class="btn btn-g" onclick="addCorporateAction()">RECORD ACTION</button>
+      <button class="btn" onclick="clearCaForm()">CLEAR</button>
+    </div>
+  
+    </div>
   </div>
   <div class="fs" style="margin-bottom:12px">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="toggleSection('recent')">
@@ -326,19 +317,15 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     </div>
     <div id="sec-body-recent" style="display:none;margin-top:14px">
 
-```
-<div class="ovx"><table><thead><tr>
-  <th>Date</th><th>Side</th><th>Symbol</th><th>Units</th><th>Price</th><th>Net Total</th><th></th>
-</tr></thead><tbody id="rb"></tbody></table></div>
-<div class="empty" id="re"><div class="empty-icon">✏️</div>No manual entries yet.</div>
-
-</div>
-```
-
+    <div class="ovx"><table><thead><tr>
+      <th>Date</th><th>Side</th><th>Symbol</th><th>Units</th><th>Price</th><th>Net Total</th><th></th>
+    </tr></thead><tbody id="rb"></tbody></table></div>
+    <div class="empty" id="re"><div class="empty-icon">✏️</div>No manual entries yet.</div>
+  
+    </div>
   </div>
 
   <!-- Trades table -->
-
   <div class="fs">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="toggleSection('tradetbl')">
       <span>📋 All Trades (<span id="tc">0</span>)</span>
@@ -350,6 +337,7 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     <div class="th">
       <span class="tt">ALL TRADES (<span id="tc">0</span>)</span>
       <div class="fr">
+        <button class="btn" onclick="retypeSymbolPrompt()" title="Bulk retype all trades for a symbol" style="font-size:11px;padding:4px 10px">⟳ Retype Symbol</button>
         <input class="fsm" placeholder="Symbol…" id="ts" oninput="renderT()" onchange="renderT()">
         <select class="fsm" id="tsi" onchange="renderT()"><option value="">All Types</option><option value="buy">Buy</option><option value="sell">Sell</option><option value="drp">DRP</option><option value="corporate_action">Corp Action</option></select>
         <select class="fsm" id="tso" onchange="renderT()"></select>
@@ -364,16 +352,14 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     <div class="empty" id="te"><div class="empty-icon">📋</div>No trades yet.</div>
   </div>
 
-```
-</div>
-```
-
+    </div>
   </div>
 
 </div>
 
-<!-- ANALYTICS -->
 
+
+<!-- ANALYTICS -->
 <div class="panel" id="panel-analytics">
   <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px">
     <select class="fsm" id="an-period" onchange="renderAnalytics()">
@@ -406,11 +392,9 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Summary stat cards row -->
-
   <div class="cards" id="an-cards" style="margin-bottom:18px"></div>
 
   <!-- Main chart -->
-
   <div class="tw" style="margin-bottom:18px">
     <div class="th"><span class="tt" id="an-chart-title">PORTFOLIO VALUE OVER TIME</span></div>
     <div id="an-legend-pills" style="display:none;flex-wrap:wrap;gap:6px;padding:10px 20px 0"></div>
@@ -420,7 +404,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Secondary row: allocation pie + yearly bar -->
-
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:18px" id="an-secondary-grid">
     <div class="tw">
       <div class="th"><span class="tt">ALLOCATION BY TYPE</span></div>
@@ -437,7 +420,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Best/worst performers -->
-
   <div id="an-perf-filter" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
     <div class="tw">
@@ -454,7 +436,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 </div>
 
 <!-- HOLDINGS DETAIL -->
-
 <div class="panel" id="panel-holdings2">
   <div class="tw">
     <div class="th">
@@ -493,6 +474,7 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
       <table id="hd-table">
         <thead><tr>
           <th onclick="hdSort('symbol')" style="cursor:pointer">Symbol ⇅</th>
+          <th>Owner</th>
           <th>Type</th>
           <th onclick="hdSort('units_desc')" style="cursor:pointer">Units ⇅</th>
           <th onclick="hdSort('cost_desc')" style="cursor:pointer">Avg Cost ⇅</th>
@@ -514,13 +496,11 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 </div>
 
 <!-- DIVIDENDS -->
-
 <div class="panel" id="panel-dividends">
   <!-- Summary cards -->
   <div class="cards" id="div-cards" style="margin-bottom:18px"></div>
 
   <!-- Add dividend / DRP + import merged -->
-
   <div class="fs" style="margin-bottom:18px">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between">
       <span>Record Dividend / Distribution &amp; DRP Entry</span>
@@ -560,50 +540,46 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
       <div class="fgi"><label class="fl">Franking % <span style="color:var(--text3);font-size:10px">(leave blank if unfranked)</span></label><input class="fi" type="number" id="dv-franking" placeholder="e.g. 100" min="0" max="100" step="any"></div>
     </div>
 
-```
-<!-- DRP extra fields — shown only when type=DRP -->
-<div id="dv-drp-fields" style="display:none;margin-top:10px">
-  <div style="font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.08em;margin-bottom:8px">DRP DETAILS — auto-creates buy trade</div>
-  <div class="fg">
-    <div class="fgi"><label class="fl">Asset Type</label>
-      <select class="fi" id="dv-drp-at">
-        <option value="asx_stock">ASX Stock</option>
-        <option value="etf">ETF</option>
-        <option value="lic">LIC</option>
-        <option value="reit">REIT</option>
-        <option value="managed">Managed Fund</option>
-      </select></div>
-    <div class="fgi"><label class="fl">Previous Carry-Forward <span style="color:var(--text3);font-size:11px;font-weight:400">auto-filled</span></label>
-      <input class="fi" type="number" id="dv-drp-carry-in" placeholder="0.00" step="any" min="0" oninput="dvDrpCalc()" style="color:var(--gold)"></div>
-    <div class="fgi"><label class="fl">Units Issued</label>
-      <input class="fi" type="number" id="dv-drp-units" placeholder="e.g. 16" step="any" min="0" oninput="dvDrpCalc()"></div>
-    <div class="fgi"><label class="fl">DRP Price Per Unit</label>
-      <input class="fi" type="number" id="dv-drp-price" placeholder="e.g. 12.00" step="any" min="0" oninput="dvDrpCalc()"></div>
-    <div class="fgi"><label class="fl">Broker / Source</label>
-      <div style="display:flex;gap:6px">
-        <select class="fi" id="dv-drp-source" style="flex:1"></select>
-        <button class="btn" onclick="promptAddBroker('dv-drp-source')" title="Add custom broker" style="padding:4px 10px;flex-shrink:0">+</button>
-      </div></div>
-  </div>
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:var(--text2);line-height:2">
-    <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:2px">PREVIEW</div>
-    <div id="dv-drp-prev-trade"></div>
-    <div id="dv-drp-prev-div"></div>
-    <div id="dv-drp-prev-carry"></div>
-  </div>
-</div>
+    <!-- DRP extra fields — shown only when type=DRP -->
+    <div id="dv-drp-fields" style="display:none;margin-top:10px">
+      <div style="font-size:11px;color:var(--text3);font-family:var(--mono);letter-spacing:.08em;margin-bottom:8px">DRP DETAILS — auto-creates buy trade</div>
+      <div class="fg">
+        <div class="fgi"><label class="fl">Asset Type</label>
+          <select class="fi" id="dv-drp-at">
+            <option value="asx_stock">ASX Stock</option>
+            <option value="etf">ETF</option>
+            <option value="lic">LIC</option>
+            <option value="reit">REIT</option>
+            <option value="managed">Managed Fund</option>
+          </select></div>
+        <div class="fgi"><label class="fl">Previous Carry-Forward <span style="color:var(--text3);font-size:11px;font-weight:400">auto-filled</span></label>
+          <input class="fi" type="number" id="dv-drp-carry-in" placeholder="0.00" step="any" min="0" oninput="dvDrpCalc()" style="color:var(--gold)"></div>
+        <div class="fgi"><label class="fl">Units Issued</label>
+          <input class="fi" type="number" id="dv-drp-units" placeholder="e.g. 16" step="any" min="0" oninput="dvDrpCalc()"></div>
+        <div class="fgi"><label class="fl">DRP Price Per Unit</label>
+          <input class="fi" type="number" id="dv-drp-price" placeholder="e.g. 12.00" step="any" min="0" oninput="dvDrpCalc()"></div>
+        <div class="fgi"><label class="fl">Broker / Source</label>
+          <div style="display:flex;gap:6px">
+            <select class="fi" id="dv-drp-source" style="flex:1"></select>
+            <button class="btn" onclick="promptAddBroker('dv-drp-source')" title="Add custom broker" style="padding:4px 10px;flex-shrink:0">+</button>
+          </div></div>
+      </div>
+      <div style="background:var(--bg2);border:1px solid var(--border);border-radius:6px;padding:10px 14px;margin:10px 0;font-size:12px;color:var(--text2);line-height:2">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text3);letter-spacing:.08em;margin-bottom:2px">PREVIEW</div>
+        <div id="dv-drp-prev-trade"></div>
+        <div id="dv-drp-prev-div"></div>
+        <div id="dv-drp-prev-carry"></div>
+      </div>
+    </div>
 
-<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
-  <button class="btn btn-g" id="dv-save-btn" onclick="addDividend()">ADD DIVIDEND</button>
-  <button class="btn" onclick="dvClear()">CLEAR</button>
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
+      <button class="btn btn-g" id="dv-save-btn" onclick="addDividend()">ADD DIVIDEND</button>
+      <button class="btn" onclick="dvClear()">CLEAR</button>
 
-</div>
-```
-
+    </div>
   </div>
 
   <!-- Chart + table -->
-
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:18px">
     <div class="tw">
       <div class="th"><span class="tt">DIVIDEND INCOME BY YEAR</span></div>
@@ -624,6 +600,8 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
       <span class="tt">DIVIDEND HISTORY</span>
       <div class="fr">
         <input class="fsm" placeholder="Symbol…" id="dv-search" oninput="renderDividends()">
+        <select class="fsm" id="dv-owner-filter" onchange="renderDividends()"><option value="">All Owners</option></select>
+        <select class="fsm" id="dv-sym-filter" onchange="renderDividends()"><option value="">All Symbols</option></select>
         <select class="fsm" id="dv-filter" onchange="renderDividends()">
           <option value="">All Types</option>
           <option value="drp">DRP</option>
@@ -649,15 +627,12 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 </div>
 
 <!-- PROPERTY -->
-
 <div class="panel" id="panel-property">
 
   <!-- Net Worth Summary bar -->
-
   <div class="cards" id="pw-cards" style="margin-bottom:18px"></div>
 
   <!-- Add / Edit property form -->
-
   <div class="fs" id="prop-form-wrap">
     <div class="fst" id="prop-form-title" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="togglePropForm()">
       <span id="prop-form-title-text">Add Property</span>
@@ -708,7 +683,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Properties list -->
-
   <div id="prop-cards-wrap"></div>
 
 </div>
@@ -716,11 +690,9 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 <div class="panel" id="panel-super">
 
   <!-- Summary cards -->
-
   <div class="cards" id="su-cards" style="margin-bottom:18px"></div>
 
   <!-- Chart -->
-
   <div class="fs" style="margin-bottom:18px">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
       <div style="font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.08em;text-transform:uppercase">BALANCE HISTORY</div>
@@ -736,7 +708,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Add / Edit form -->
-
   <div class="fs" id="su-form-wrap">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between;cursor:pointer;margin-bottom:0" onclick="toggleSuperForm()">
       <span id="su-form-title-text">Add Super Account</span>
@@ -775,6 +746,25 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
             <input class="fi su-contrib" data-contrib="ncc_prev" type="number" placeholder="0" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
         </div>
       </div>
+      <!-- Carry-forward CC inputs -->
+      <div style="margin-top:16px;padding:12px;background:rgba(99,102,241,0.06);border-radius:8px;border:1px solid rgba(99,102,241,0.2)">
+        <div style="font-family:var(--mono);font-size:11px;color:#818cf8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">⟳ Carry-Forward Concessional Contributions</div>
+        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Enter total CC (employer + personal) actually used each year. Leave blank if same as cap ($30,000). Super balance must be &lt;$500k at 30 Jun of prior year.</div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
+          <div><label class="fl" style="font-size:10px">Super Balance (30 Jun FY2025)</label>
+            <input class="fi su-contrib" data-contrib="bal_prevyr" type="number" placeholder="e.g. 180000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2021 — Total CC used</label>
+            <input class="fi su-contrib" data-contrib="cc_fy2021" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2022 — Total CC used</label>
+            <input class="fi su-contrib" data-contrib="cc_fy2022" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2023 — Total CC used</label>
+            <input class="fi su-contrib" data-contrib="cc_fy2023" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2024 — Total CC used</label>
+            <input class="fi su-contrib" data-contrib="cc_fy2024" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2025 — Total CC used</label>
+            <input class="fi su-contrib" data-contrib="cc_fy2025" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+        </div>
+      </div>
       <!-- FY history -->
       <div style="margin-top:14px;margin-bottom:14px">
         <div style="font-family:var(--mono);font-size:11px;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;margin-bottom:10px">BALANCE AT END OF FINANCIAL YEAR</div>
@@ -803,7 +793,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Accounts list -->
-
   <div id="su-accounts-wrap" style="margin-top:18px"></div>
 
 </div>
@@ -812,11 +801,9 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 <div class="panel" id="panel-spending">
 
   <!-- Summary cards -->
-
   <div class="cards" id="sp-cards" style="margin-bottom:20px"></div>
 
   <!-- FY selector + controls -->
-
   <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:18px">
     <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em">FINANCIAL YEAR</div>
     <div id="sp-fy-bar" style="display:flex;gap:6px;flex-wrap:wrap"></div>
@@ -832,34 +819,29 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   <div id="sp-import-status" style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:10px;display:none"></div>
 
   <!-- Money Out -->
-
   <div class="fs" style="margin-bottom:16px">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between">
       <span>💸 Money Out</span>
       <span id="sp-out-total" style="font-family:var(--mono);font-size:13px;color:var(--red)"></span>
     </div>
 
-```
-<!-- Category summary rows -->
-<div id="sp-cat-list" style="margin-bottom:14px"></div>
+    <!-- Category summary rows -->
+    <div id="sp-cat-list" style="margin-bottom:14px"></div>
 
-<!-- Transaction detail table (shown when category selected) -->
-<div id="sp-txn-wrap" style="display:none">
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
-    <button class="btn" onclick="clearSpendingCat()" style="font-size:11px;padding:4px 10px">← All Categories</button>
-    <span id="sp-txn-title" style="font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:600"></span>
-  </div>
-  <table class="tbl" style="width:100%">
-    <thead><tr id="sp-txn-head"></tr></thead>
-    <tbody id="sp-txn-body"></tbody>
-  </table>
-</div>
-```
-
+    <!-- Transaction detail table (shown when category selected) -->
+    <div id="sp-txn-wrap" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <button class="btn" onclick="clearSpendingCat()" style="font-size:11px;padding:4px 10px">← All Categories</button>
+        <span id="sp-txn-title" style="font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:600"></span>
+      </div>
+      <table class="tbl" style="width:100%">
+        <thead><tr id="sp-txn-head"></tr></thead>
+        <tbody id="sp-txn-body"></tbody>
+      </table>
+    </div>
   </div>
 
   <!-- Money In -->
-
   <div class="fs">
     <div class="fst" style="display:flex;align-items:center;justify-content:space-between">
       <span>💚 Money In</span>
@@ -880,96 +862,90 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
 
 </div>
 
-<!-- SETTINGS -->
 
+<!-- SETTINGS -->
 <div class="panel" id="panel-tax"></div>
 
 <div class="panel" id="panel-settings">
 
   <!-- Cloudflare Worker setup -->
-
   <div class="fs" style="margin-bottom:16px">
     <div class="fst">💾 Backup &amp; Restore</div>
 
-```
-<div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px">
+    <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-start;margin-bottom:14px">
 
-  <!-- Export -->
-  <div style="flex:1;min-width:220px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">EXPORT</div>
-    <div style="display:flex;flex-direction:column;gap:7px">
-      <button class="btn btn-g" onclick="backupExport()" style="padding:8px;text-align:left">
-        ⬇ Download Backup <span style="color:var(--text3);font-size:10px">.json</span>
-      </button>
-      <button class="btn btn-g" onclick="exportXLSX()" style="padding:8px;text-align:left">
-        📊 Export Spreadsheet <span style="color:var(--text3);font-size:10px">.xlsx</span>
-      </button>
-      <button class="btn btn-g" onclick="exportCSVZip()" style="padding:8px;text-align:left">
-        📄 Export All CSV <span style="color:var(--text3);font-size:10px">individual .csv files</span>
-      </button>
+      <!-- Export -->
+      <div style="flex:1;min-width:220px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">EXPORT</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <button class="btn btn-g" onclick="backupExport()" style="padding:8px;text-align:left">
+            ⬇ Download Backup <span style="color:var(--text3);font-size:10px">.json</span>
+          </button>
+          <button class="btn btn-g" onclick="exportXLSX()" style="padding:8px;text-align:left">
+            📊 Export Spreadsheet <span style="color:var(--text3);font-size:10px">.xlsx</span>
+          </button>
+          <button class="btn btn-g" onclick="exportCSVZip()" style="padding:8px;text-align:left">
+            📄 Export All CSV <span style="color:var(--text3);font-size:10px">individual .csv files</span>
+          </button>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
+          XLSX &amp; CSV export every data type to separate sheets/files. JSON backup is the only format that can be fully restored.
+        </div>
+      </div>
+
+      <!-- Import -->
+      <div style="flex:1;min-width:220px">
+        <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">RESTORE / IMPORT</div>
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <label class="btn btn-r" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            ⬆ Restore from Backup <span style="color:var(--text3);font-size:10px">.json</span>
+            <input type="file" accept=".json" style="display:none" onchange="backupImport(this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            📈 Import Trades CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
+            <input type="file" accept=".csv" style="display:none" onchange="csvImport('trades',this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            💰 Import Dividends CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
+            <input type="file" accept=".csv" style="display:none" onchange="csvImport('dividends',this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            📄 Import Dividend/DRP PDF <span style="color:var(--text3);font-size:10px">auto-parses statement</span>
+            <input type="file" accept=".pdf" multiple style="display:none" onchange="importDividendPDF(this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            🏠 Import Properties CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
+            <input type="file" accept=".csv" style="display:none" onchange="csvImport('properties',this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            🏦 Import Super CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
+            <input type="file" accept=".csv" style="display:none" onchange="csvImport('super',this)">
+          </label>
+          <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
+            💳 Import Spending CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
+            <input type="file" accept=".csv" style="display:none" onchange="csvImport('spending',this)">
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
+          JSON backup fully restores everything. CSV imports merge into existing data, skipping duplicates.<br>
+          The 6 exported CSVs: <b style="color:var(--text2)">Trades, Dividends, Properties &amp; Spending</b> can be re-imported above. Holdings and Settings cannot.
+        </div>
+      </div>
+
     </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
-      XLSX &amp; CSV export every data type to separate sheets/files. JSON backup is the only format that can be fully restored.
+
+    <!-- Restore preview modal -->
+    <div id="backup-preview" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px">
+      <div style="font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px">📋 RESTORE PREVIEW</div>
+      <div id="backup-preview-body" style="font-size:12px;line-height:2;margin-bottom:14px"></div>
+      <div style="display:flex;gap:10px">
+        <button class="btn btn-r" id="backup-confirm-btn" onclick="backupConfirm()" style="padding:7px 20px">✓ Yes, Restore Now</button>
+        <button class="btn" onclick="backupCancel()" style="padding:7px 16px">✗ Cancel</button>
+      </div>
     </div>
-  </div>
 
-  <!-- Import -->
-  <div style="flex:1;min-width:220px">
-    <div style="font-family:var(--mono);font-size:11px;color:var(--text3);letter-spacing:.08em;margin-bottom:8px">RESTORE / IMPORT</div>
-    <div style="display:flex;flex-direction:column;gap:7px">
-      <label class="btn btn-r" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        ⬆ Restore from Backup <span style="color:var(--text3);font-size:10px">.json</span>
-        <input type="file" accept=".json" style="display:none" onchange="backupImport(this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        📈 Import Trades CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
-        <input type="file" accept=".csv" style="display:none" onchange="csvImport('trades',this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        💰 Import Dividends CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
-        <input type="file" accept=".csv" style="display:none" onchange="csvImport('dividends',this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        📄 Import Dividend/DRP PDF <span style="color:var(--text3);font-size:10px">auto-parses statement</span>
-        <input type="file" accept=".pdf" multiple style="display:none" onchange="importDividendPDF(this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        🏠 Import Properties CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
-        <input type="file" accept=".csv" style="display:none" onchange="csvImport('properties',this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        🏦 Import Super CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
-        <input type="file" accept=".csv" style="display:none" onchange="csvImport('super',this)">
-      </label>
-      <label class="btn" style="padding:8px;cursor:pointer;display:block;text-align:left;box-sizing:border-box">
-        💳 Import Spending CSV <span style="color:var(--text3);font-size:10px">skips dupes</span>
-        <input type="file" accept=".csv" style="display:none" onchange="csvImport('spending',this)">
-      </label>
-    </div>
-    <div style="font-size:11px;color:var(--text3);margin-top:8px;line-height:1.5">
-      JSON backup fully restores everything. CSV imports merge into existing data, skipping duplicates.<br>
-      The 6 exported CSVs: <b style="color:var(--text2)">Trades, Dividends, Properties &amp; Spending</b> can be re-imported above. Holdings and Settings cannot.
-    </div>
-  </div>
-
-</div>
-
-<!-- Restore preview modal -->
-<div id="backup-preview" style="display:none;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:16px;margin-top:8px">
-  <div style="font-family:var(--mono);font-size:12px;color:var(--gold);font-weight:700;margin-bottom:12px">📋 RESTORE PREVIEW</div>
-  <div id="backup-preview-body" style="font-size:12px;line-height:2;margin-bottom:14px"></div>
-  <div style="display:flex;gap:10px">
-    <button class="btn btn-r" id="backup-confirm-btn" onclick="backupConfirm()" style="padding:7px 20px">✓ Yes, Restore Now</button>
-    <button class="btn" onclick="backupCancel()" style="padding:7px 16px">✗ Cancel</button>
-  </div>
-</div>
-
-<div id="backup-status" style="display:none;font-family:var(--mono);font-size:11px;margin-top:8px"></div>
-```
-
-  </div>
-
-  <div class="fs" style="margin-bottom:18px">
+    <div id="backup-status" style="display:none;font-family:var(--mono);font-size:11px;margin-top:8px"></div>
+  </div>iv class="fs" style="margin-bottom:18px">
     <div class="fst">☁ Cloud Sync — GitHub Gist</div>
     <div style="background:rgba(59,130,246,0.1);border:1px solid rgba(59,130,246,0.3);border-radius:5px;padding:8px 12px;margin-bottom:12px;font-size:11px;color:var(--text3)">
       ⚠ Sync only works when opened via <b style="color:var(--blue)">https://mangohill.github.io/mango-mango/</b> — not from a downloaded/local file. Safari on iPad blocks network requests from local files.
@@ -1001,7 +977,7 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
       </div>
     </div>
     <div style="font-size:10px;color:var(--text3)">Free — uses GitHub Gist as private storage. Create a token at github.com → Settings → Developer settings → Personal access tokens → tick <b>gist</b> scope only.</div>
-  </div>
+  
 
   <div class="fs">
     <div class="fst">⚡ Auto Prices — Cloudflare Worker Setup (Free, 5 min)</div>
@@ -1032,7 +1008,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Manual prices -->
-
   <div class="fs">
     <div class="fst">Manual Price Entry</div>
     <p style="font-family:var(--mono);font-size:11px;color:var(--text3);margin-bottom:14px">
@@ -1055,7 +1030,6 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
   </div>
 
   <!-- Cached prices -->
-
   <div class="tw">
     <div class="th" style="justify-content:space-between">
       <span class="tt">CACHED PRICES</span>
@@ -1068,19 +1042,132 @@ border-color: var(–gold); background: var(–gold); color: #0a0f1e;
     <div class="empty" id="prices-empty"><div class="empty-icon">💰</div>No prices cached yet.</div>
   </div>
 
+
+
+
+
+
+  <!-- Stock Ownership -->
+  <div class="fs" style="margin-top:18px">
+    <div class="fst">👤 Stock Ownership</div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:12px">
+      Assign each stock/ETF to a person. Affects dividend attribution and tax estimates.
+      Changes take effect immediately in Holdings, Dividends, and Tax tabs.
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+      <button class="btn" onclick="promptAddPerson()" style="font-size:12px">+ Add Person</button>
+      <span id="persons-list" style="display:flex;gap:6px;flex-wrap:wrap;align-items:center"></span>
+    </div>
+    <div id="ownership-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
+    <div style="font-size:10px;color:var(--text3);margin-top:10px">
+      Joint = 50/50 split between all persons (default for new stocks)
+    </div>
+  </div>
 </div>
 
-</div>
 <div class="notif" id="notif"></div>
 
 <script>
+function csvSafe(v){
+  // Prevent CSV/XLSX formula injection by prefixing formula chars with apostrophe
+  if(v == null) return '';
+  const s = String(v);
+  if(s.match(/^[=+\-@\t\r]/)) return "'" + s;
+  return s;
+}
+
+// ── STOCK OWNERSHIP HELPERS ───────────────────────────────────────
+function getAllPersons(){
+  return ['lumia','chilli',...extraPersons];
+}
+function getPersonLabel(key){
+  if(key==='lumia')  return 'Lumia';
+  if(key==='chilli') return 'Chilli';
+  if(key==='joint')  return 'Joint';
+  return key.charAt(0).toUpperCase()+key.slice(1);
+}
+function getPersonColour(key){
+  const colours = {lumia:'#60a5fa',chilli:'#f472b6',joint:'#34d399'};
+  if(colours[key]) return colours[key];
+  // Generate stable colour for custom persons
+  let hash=0; for(const c of key) hash=(hash*31+c.charCodeAt(0))&0xffffffff;
+  const hue = Math.abs(hash)%360;
+  return `hsl(${hue},60%,60%)`;
+}
+function saveStockOwners(){ localStorage.setItem('pt_stock_owners', JSON.stringify(stockOwners)); }
+function saveExtraPersons(){ localStorage.setItem('pt_extra_persons', JSON.stringify(extraPersons)); }
+function getSymbolOwner(sym){ return stockOwners[sym]||'joint'; }
+function setSymbolOwner(sym, owner){ stockOwners[sym]=owner; saveStockOwners(); }
+// Get share for a given person (0-1)
+function ownerShare(sym, person){
+  const own = getSymbolOwner(sym);
+  if(own === person) return 1.0;
+  if(own === 'joint') return 0.5; // joint = 50/50 between all persons
+  return 0.0;
+}
+// Add a custom person
+function addPerson(name){
+  const key = name.trim().toLowerCase().replace(/[^a-z0-9]/g,'_');
+  if(!key||getAllPersons().includes(key)){ notify('Person already exists or invalid name','err'); return false; }
+  extraPersons.push(key);
+  saveExtraPersons();
+  // Ensure taxData has an entry for this person
+  for(const fy of Object.keys(taxData)){
+    if(!taxData[fy][key]) taxData[fy][key]={salary:0,withheld:0,payg:0,hecs:0,privateHealth:false,sacrifice:0};
+  }
+  saveTaxData();
+  return key;
+}
+function promptAddPerson(){
+  const name = prompt('Enter name (e.g. "Partner", "Trust", "Company"):');
+  if(!name||!name.trim()) return;
+  const key = addPerson(name.trim());
+  if(key){ notify(getPersonLabel(key)+' added ✓'); refreshOwnerSelects(); renderTax(); }
+}
+function refreshOwnerSelects(){
+  // Rebuild all owner selects across the app
+  document.querySelectorAll('.owner-select').forEach(sel=>{
+    const cur = sel.value;
+    const sym = sel.dataset.sym;
+    sel.innerHTML = buildOwnerOptions(getSymbolOwner(sym));
+  });
+}
+function buildOwnerOptions(selectedKey){
+  const opts = [
+    ...getAllPersons().map(p=>`<option value="${p}" ${p===selectedKey?'selected':''}>${getPersonLabel(p)}</option>`),
+    `<option value="joint" ${selectedKey==='joint'?'selected':''}>Joint (50/50)</option>`,
+  ];
+  return opts.join('');
+}
+function changeSymbolOwner(sym, newOwner){
+  setSymbolOwner(sym, newOwner);
+  // Refresh all owner badges for this symbol
+  document.querySelectorAll(`[data-owner-sym="${escHtml(sym)}"]`).forEach(el=>{
+    el.textContent = getPersonLabel(newOwner);
+    el.style.background = getPersonColour(newOwner)+'33';
+    el.style.color = getPersonColour(newOwner);
+  });
+  renderTax();
+}
+
+
+function escHtml(s){
+  if(s==null) return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#39;');
+}
+
 // ── STATE ────────────────────────────────────────────────────────────
-let trades    = JSON.parse(localStorage.getItem('pt_trades')||'[]');
-let prices    = JSON.parse(localStorage.getItem('pt_prices')||'{}');
+let trades    = (()=>{try{return JSON.parse(localStorage.getItem('pt_trades')||'[]');}catch(e){return [];}})() ;
+let prices    = (()=>{try{return JSON.parse(localStorage.getItem('pt_prices')||'{}');}catch(e){return {};}})() ;
 let pending   = [];
-let dividends = JSON.parse(localStorage.getItem('pt_divs')||'[]');
+let dividends = (()=>{try{return JSON.parse(localStorage.getItem('pt_divs')||'[]');}catch(e){return [];}})() ;
 let editingTradeId = null;
-let superAccounts = JSON.parse(localStorage.getItem('pt_super')||'[]');
+let superAccounts = (()=>{try{return JSON.parse(localStorage.getItem('pt_super')||'[]');}catch(e){return [];}})() ;
 let editingSuperAccountId = null;
 let propRentAnnual = true;   // true=annual, false=monthly
 let propDebtNet = false;     // false=gross debt, true=net (minus offsets)
@@ -1156,7 +1243,7 @@ const DEFAULT_BROKERS = [
 ];
 
 function getCustomBrokers(){
-  try { return JSON.parse(localStorage.getItem('pt_brokers')||'[]'); } catch{ return []; }
+  try { return (()=>{try{return JSON.parse(localStorage.getItem('pt_brokers')||'[]');}catch(e){return [];}})() ; } catch{ return []; }
 }
 function saveCustomBrokers(arr){
   localStorage.setItem('pt_brokers', JSON.stringify(arr));
@@ -1478,7 +1565,7 @@ function showPrev(parsed,filename,src){
     <td>${n2(t.price,dec(t.price))}</td>
     <td style="color:var(--text3)">${n2(t.fees)}</td>
     <td style="color:var(--text3);font-size:10px">${t.source}</td>
-    <td style="color:var(--text3);font-size:10px">${dup?'<span style="color:var(--gold)">⚠ duplicate</span>':t.notes}</td>
+    <td style="color:var(--text3);font-size:10px">${dup?'<span style="color:var(--gold)">⚠ duplicate</span>':escHtml(t.notes)}</td>
   </tr>`;
   }).join('')+(parsed.length>30?`<tr><td colspan="9" style="text-align:center;color:var(--text3);font-size:11px">…and ${parsed.length-30} more rows</td></tr>`:'');
 }
@@ -1517,7 +1604,7 @@ const BROKER_SUFFIX = {
   };
 
 // Returns display label e.g. "DHHF:AU" -> "DHHF (Betashares)", "DHHF" -> "DHHF"
-function displaySymbol(sym){
+function displaySymbol(sym){ sym = escHtml(sym||'');
   if(!sym) return sym;
   const m = sym.match(/^([^:]+):(.+)$/);
   if(!m) return sym.toUpperCase();
@@ -1570,8 +1657,15 @@ function calcH(){
           costToAdd = fromEntry.costBasis||0;
           fromEntry.costBasis = 0;
           fromEntry.units = 0;
+        } else if(sub==='split_to' || sub==='rename_to' || sub==='merger_to'){
+          // fromSymbol missing — try same symbol (handles stock splits)
+          const selfEntry = map[s];
+          if(selfEntry && selfEntry._caTransfer != null){
+            costToAdd = selfEntry._caTransfer;
+          } else {
+            costToAdd = +t.units * +t.price;
+          }
         } else {
-          // No fromSymbol or not found — fall back to units*price (legacy)
           costToAdd = +t.units * +t.price;
         }
         map[s].units += +t.units;
@@ -1653,6 +1747,17 @@ function renderH(){
   const isStock  = h => !CRYPTO_TYPES.includes(h.assetType);
 
   const holdings = calcH();
+  // Rebuild asset-type filter from actual holdings (auto-includes new types)
+  const _allTypes = [...new Set(holdings.map(h=>h.assetType).filter(Boolean))].sort();
+  const AT_NAMES = {asx_stock:'ASX Stock',etf:'ETF',lic:'LIC',reit:'REIT',
+    managed:'Managed Fund',crypto:'Crypto',bond:'Bond',cash:'Cash',other:'Other'};
+  for(const _fid of ['ht','hd-type']){
+    const _fsel = $(_fid);
+    if(!_fsel) continue;
+    const _cur = _fsel.value;
+    _fsel.innerHTML = '<option value="">All Types</option>' +
+      _allTypes.map(t=>`<option value="${t}" ${t===_cur?'selected':''}>${AT_NAMES[t]||t}</option>`).join('');
+  }
   const s = ($('hs').value||'').toLowerCase(), tf = $('ht').value;
   let f = holdings.filter(h=>(!s||h.symbol.toLowerCase().includes(s))&&(!tf||h.assetType===tf));
   $('he').style.display = f.length ? 'none' : '';
@@ -1748,8 +1853,8 @@ function renderH(){
     cardsEl.style.borderRadius = portfolioView===0 ? '' : '7px';
   }
 
-  if($('cv')) $('cv').textContent = tv ? '$'+n2(tv) : '—';
-  if($('cc')) $('cc').textContent = '$'+n2(tc);
+  if($('cv')) $('cv').textContent = tv ? n2(tv) : '—';
+  if($('cc')) $('cc').textContent = n2(tc);
   if($('cp')){
     $('cp').textContent = tpl!=null ? (tpl>=0?'+':'')+n2(tpl) : '—';
     $('cp').className = 'card-value '+(tpl==null?'neu':tpl>=0?'pos':'neg');
@@ -1846,7 +1951,7 @@ function renderT(){
       const isFrom = sub.endsWith('_from');
       const arrow  = isFrom ? '→' : '←';
       const peer   = isFrom ? (t.fromSymbol||'') : (t.fromSymbol||'');
-      const caTag  = `<span style="background:#2a1f6a;color:#a78bfa;border:1px solid #6d4fd4;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700">${t.caLabel||'Corp Action'}</span>`;
+      const caTag  = `<span style="background:#2a1f6a;color:#a78bfa;border:1px solid #6d4fd4;border-radius:4px;padding:2px 7px;font-size:10px;font-weight:700">${escHtml(t.caLabel||'Corp Action')}</span>`;
       const sideTag= isFrom
         ? `<span style="color:var(--neg);font-weight:700">OUT</span>`
         : `<span style="color:var(--pos);font-weight:700">IN</span>`;
@@ -1954,6 +2059,77 @@ function cancelEditTrade(){
   renderT();
 }
 
+function retypeAllTrades(symbol, newAssetType, doSave){
+  let count = 0;
+  trades.forEach(t => {
+    if(t.symbol === symbol && t.assetType !== newAssetType){
+      t.assetType = newAssetType;
+      count++;
+    }
+  });
+  if(doSave !== false){ save(); renderT(); renderH(); renderR(); }
+  return count;
+}
+
+function retypeSymbolPrompt(){
+  const existing = $('retype-panel');
+  if(existing){ existing.remove(); return; }
+  const symMap = {};
+  trades.forEach(t=>{ if(t.symbol) symMap[t.symbol] = t.assetType; });
+  const syms = Object.keys(symMap).sort();
+  if(!syms.length){ notify('No trades to retype.','err'); return; }
+  const TYPE_OPTS = [
+    ['asx_stock','ASX Stock'],['etf','ETF'],['lic','LIC'],['reit','REIT'],
+    ['managed','Managed Fund'],['crypto','Crypto'],['bond','Bond'],['cash','Cash'],['other','Other']
+  ];
+  const panel = document.createElement('div');
+  panel.id = 'retype-panel';
+  panel.style.cssText = 'background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px;margin:8px 0 4px;display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end';
+  panel.innerHTML = `
+    <div>
+      <label class="fl">Symbol</label>
+      <select class="fi" id="retype-sym" style="min-width:120px" onchange="retypeSyncType()">
+        ${syms.map(s=>`<option value="${escHtml(s)}">${escHtml(s)} (${symMap[s]||'?'})</option>`).join('')}
+      </select>
+    </div>
+    <div>
+      <label class="fl">Change All Trades To</label>
+      <select class="fi" id="retype-at" style="min-width:140px">
+        ${TYPE_OPTS.map(([v,l])=>`<option value="${v}">${l}</option>`).join('')}
+      </select>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="applyRetype()">Apply to All Trades</button>
+      <button class="btn" onclick="document.getElementById('retype-panel').remove()">Cancel</button>
+    </div>
+    <div style="font-size:11px;color:var(--text3);width:100%">
+      Updates every trade for the selected symbol to the new asset type — including buys, sells, DRP and corporate actions.
+    </div>
+  `;
+  const th = document.querySelector('#panel-trades .th');
+  if(th) th.after(panel);
+  retypeSyncType();
+}
+
+function retypeSyncType(){
+  const symMap = {};
+  trades.forEach(t=>{ if(t.symbol) symMap[t.symbol] = t.assetType; });
+  const sym = $('retype-sym')?.value;
+  const atSel = $('retype-at');
+  if(atSel && sym && symMap[sym]) atSel.value = symMap[sym];
+}
+
+function applyRetype(){
+  const sym = ($('retype-sym')?.value||'').trim().toUpperCase();
+  const newType = $('retype-at')?.value||'';
+  if(!sym||!newType){ notify('Select a symbol and type.','err'); return; }
+  const total = trades.filter(t=>t.symbol===sym).length;
+  const changed = retypeAllTrades(sym, newType, true);
+  document.getElementById('retype-panel')?.remove();
+  notify(`Updated ${total} trade${total!==1?'s':''} for ${sym} → ${newType} (${changed} type${changed!==1?'s':''} changed) ✓`);
+}
+
+
 function saveEditTrade(){
   const idx = trades.findIndex(t=>t.id===editingTradeId);
   if(idx<0){ notify('Trade not found.','err'); return; }
@@ -1966,7 +2142,20 @@ function saveEditTrade(){
   const fees  = parseFloat($('et-fees').value)||0;
   const source = ($('et-source')?.value || trades[idx]?.source || '');
   if(!date||!sym||isNaN(units)||isNaN(price)){ notify('Fill all required fields.','err'); return; }
+  if(units<=0){ notify('Units must be greater than zero.','err'); return; }
+  if(price<0){ notify('Price cannot be negative.','err'); return; }
+  const prevAsset = trades[idx].assetType;
   trades[idx] = {...trades[idx], date, symbol:sym, type, assetType:asset, units, price, fees, source};
+  // Offer bulk retype if assetType changed and other trades exist for this symbol
+  if(asset !== prevAsset){
+    const others = trades.filter((t,i)=> i!==idx && t.symbol===sym && t.assetType!==asset);
+    if(others.length > 0){
+      const doAll = confirm(
+        `${others.length} other trade${others.length>1?'s':''} for ${sym} still use type "${prevAsset}".\n\nUpdate ALL ${sym} trades to "${asset}"?`
+      );
+      if(doAll) retypeAllTrades(sym, asset, false);
+    }
+  }
   editingTradeId = null;
   save(); renderT(); renderH(); renderR();
   notify('Trade updated ✓');
@@ -2003,6 +2192,7 @@ function addTrade(){
 }
 function clearForm(){['fsy','fun','fpr','fno'].forEach(id=>$(id).value='');$('ffe').value='0';$('fpv').textContent='';}
 function delT(idx){
+  if(idx < 0 || idx >= trades.length){ notify('Trade not found.','err'); return; }
   if(!confirm('Delete this trade?')) return;
   trades.splice(idx,1); save(); renderT(); renderH(); renderR();
   notify('Trade deleted.','err');
@@ -2177,12 +2367,12 @@ function addCorporateAction(){
       id:uid(), date, type:'sell', symbol:fromSym,
       assetType: $('ca-at').value||'asx_stock',
       units, price:0, fees:0, source:'manual',
-      notes:`Capital loss write-off — ${fromSym} delisted/worthless. Cost basis: $${n2(h?h.costBasis:0)}.`,
+      notes:`Capital loss write-off — ${fromSym} delisted/worthless. Cost basis: ${n2(h?h.costBasis:0)}.`,
       subtype:'', caLabel:'Write-off (Worthless)',
     };
     trades.push(writeOff);
     save(); clearCaForm(); renderH(); renderT(); renderR();
-    notify(`✓ ${fromSym} written off — ${units.toFixed(4)} units at $0. Capital loss: $${n2(h?h.costBasis:0)}.`);
+    notify(`✓ ${fromSym} written off — ${units.toFixed(4)} units at $0. Capital loss: ${n2(h?h.costBasis:0)}.`);
     return;
   }
   if(caType!=='rename'&&caType!=='spinoff'&&!ratio){ notify('Enter a conversion ratio.','err'); return; }
@@ -2274,6 +2464,7 @@ function switchTab(name,el){
   // Reset all sort states on tab switch
   for(const k in SORT_STATE) delete SORT_STATE[k];
   if(name==='portfolio') renderH();
+  refreshAllBrokerSelects();
   if(name==='trades'){ renderT(); setDate(); setCaType('merger'); const cd=$('ca-date');if(cd&&!cd.value)cd.value=new Date().toISOString().slice(0,10); const dd=$('dv-date');if(dd&&!dd.value)dd.value=new Date().toISOString().slice(0,10); }
   if(name==='add'){renderR();setDate();setCaType('merger');const cd=$('ca-date');if(cd&&!cd.value)cd.value=new Date().toISOString().slice(0,10);}
   if(name==='analytics'){ renderAnalytics(); }
@@ -2282,14 +2473,19 @@ function switchTab(name,el){
   if(name==='spending'){ initSpending(); }
   if(name==='super'){ renderSuperAccounts(); renderSuperCards(); renderSuperChart(); syncSuperColorPickers(); }
   if(name==='property'){ renderProperties(); renderPropCards(); if($('pf-splits-wrap')&&!$('pf-splits-wrap').children.length) renderSplitRows([]); }
-  if(name==='settings'){ renderPrices(); loadCFUrl(); syncInitUI(); }
+  if(name==='settings'){ renderPrices(); loadCFUrl(); syncInitUI(); renderOwnershipGrid(); }
   if(name==='tax'){ renderTax(); }
 }
 
 // ── LIVE PRICES ──────────────────────────────────────────────────────
 
 // Your Cloudflare Worker URL — set this after deploying the worker (see ⚙ Settings)
-function getWorkerURL(){ return localStorage.getItem('cf_worker_url')||''; }
+function getWorkerURL(){
+  const url = localStorage.getItem('cf_worker_url')||'';
+  // Only allow HTTPS URLs to prevent javascript: or data: injection
+  if(url && !url.startsWith('https://')) return '';
+  return url;
+}
 
 async function fetchASXPrices(symbols){
   const workerURL = getWorkerURL();
@@ -2647,8 +2843,10 @@ function mkChart(id, cfg){
 // ── CHART DEFAULTS ────────────────────────────────────────────────────
 Chart.defaults.color = '#8899aa';
 Chart.defaults.borderColor = '#1f2733';
-Chart.defaults.font.family = "'IBM Plex Mono', monospace";
-Chart.defaults.font.size = 11;
+if(typeof Chart !== 'undefined' && Chart.defaults && Chart.defaults.font){
+  Chart.defaults.font.family = "'IBM Plex Mono', monospace";
+  Chart.defaults.font.size = 11;
+}
 
 const PALETTE = ['#3d9cf0','#00d68f','#f5a623','#ff4757','#b47bff','#00d4ff','#ff6b6b','#ffd166','#06d6a0','#118ab2'];
 
@@ -2723,7 +2921,7 @@ function renderAnalytics(){
     {l:'Total Return',    v:n2(totalPnl+filtDiv),  s:(totalPnl+filtDiv>=0?'pos':'neg'), sub:`P&L + Divs · ${pLabel}`},
     {l:'Unrealised P&L',  v:n2(totalPnl),          s:clr(totalPnl),                    sub:nP(pnlPct)+' · all time'},
     {l:'Dividend Income', v:n2(filtDiv),            s:'pos',
-      sub:`Cash · ${filtDivs.length} payments · ${pLabel} · Grossed-up: $${n2(grossUpTotal(filtDivs))}`},
+      sub:`Cash · ${filtDivs.length} payments · ${pLabel} · Grossed-up: ${n2(grossUpTotal(filtDivs))}`},
 
     {l:'Total Invested',  v:n2(totalCost),          s:'neu',                            sub:'Cost basis · all time'},
     {l:'Total Fees Paid', v:n2(filtFees),           s:'neg',                            sub:`Brokerage · ${pLabel}`},
@@ -3106,6 +3304,19 @@ function renderHD(){
 
   $('hd-body').innerHTML = rows.map(h=>`<tr>
     <td><b>${displaySymbol(h.symbol)}</b></td>
+    <td style="white-space:nowrap">
+      <span style="display:inline-flex;align-items:center;gap:4px;
+        font-size:10px;padding:2px 6px;border-radius:12px;
+        background:${getPersonColour(getSymbolOwner(h.symbol))}33;
+        color:${getPersonColour(getSymbolOwner(h.symbol))}">
+        <select class="owner-select" data-owner-sym="${escHtml(h.symbol)}"
+          style="background:transparent;border:none;color:inherit;font-size:10px;
+                 padding:0;cursor:pointer;font-family:var(--mono);max-width:80px"
+          onchange="changeSymbolOwner('${escHtml(h.symbol)}',this.value)">
+          ${buildOwnerOptions(getSymbolOwner(h.symbol))}
+        </select>
+      </span>
+    </td>
     <td>${bT(h.assetType)}</td>
     <td style="text-align:right">${nN(h.units,8)}</td>
     <td style="text-align:right">${n2(h.avg,dec(h.avg))}</td>
@@ -4004,7 +4215,7 @@ function renderDivCards(){
 
   $('div-cards').innerHTML = [
     { key:null,       l:'Total Income',         v:n2(dividends.reduce((s,d)=>s+(+d.amount||0),0)), s:'pos',
-      sub:'Cash · All time · Grossed-up: $'+n2(grossUpTotal(dividends)) },
+      sub:'Cash · All time · Grossed-up: '+n2(grossUpTotal(dividends)) },
 
     { key:'thisFY',   l:divCardMode.thisFY===0?'This Financial Year':'Previous Financial Year', v:n2(fyTotal), s:'pos', sub:modeLabel(divCardMode.thisFY), hint:divCardMode.thisFY===0?'▸ click for prev FY':'▸ click for current FY' },
     { key:'yield',    l:'Portfolio Yield',       v:yieldPct.toFixed(2)+'% cash',  s:'pos',
@@ -4100,9 +4311,25 @@ function renderFYBar(){
 function renderDividends(){
   const search = ($('dv-search').value||'').toLowerCase();
   const typeF  = $('dv-filter').value;
+  // Rebuild dv-sym-filter dynamically from all dividend symbols
+  const _dvSymSel = $('dv-sym-filter');
+  const _dvSymCur = _dvSymSel ? _dvSymSel.value : '';
+  const _dvSyms = [...new Set(dividends.map(d=>d.symbol).filter(Boolean))].sort();
+  if(_dvSymSel) _dvSymSel.innerHTML = '<option value="">All Symbols</option>' +
+    _dvSyms.map(s=>`<option value="${escHtml(s)}" ${s===_dvSymCur?'selected':''}>${escHtml(s)}</option>`).join('');
+  const symF = _dvSymCur;
+  // Rebuild dv-owner-filter from actual owners
+  const _dvOwnerSel = $('dv-owner-filter');
+  const _dvOwnerCur = _dvOwnerSel ? _dvOwnerSel.value : '';
+  if(_dvOwnerSel) _dvOwnerSel.innerHTML = '<option value="">All Owners</option>' +
+    getAllPersons().concat(['joint']).map(p=>`<option value="${p}" ${p===_dvOwnerCur?'selected':''}>${getPersonLabel(p)}</option>`).join('');
+  const ownerF = _dvOwnerCur;
+
   let filtered = [...dividends].filter(d=>{
     if(search && !d.symbol.toLowerCase().includes(search)) return false;
     if(typeF && d.type!==typeF) return false;
+    if(symF   && d.symbol!==symF) return false;
+    if(ownerF && getSymbolOwner(d.symbol)!==ownerF) return false;
     if(dvFYFilter !== 'ALL'){
       const fy = dateToFY(d.date);
       if(String(fy) !== dvFYFilter) return false;
@@ -4148,7 +4375,7 @@ function renderDividends(){
           ${TYPES.map(t=>`<option value="${t}"${t===d.type?' selected':''}>${TYPE_LABEL[t]}</option>`).join('')}
         </select></td>
         <td><input class="fi" type="number" id="ed-amt" value="${d.amount}" step="any" style="width:100px;padding:3px 5px;text-align:right"></td>
-        <td><input class="fi" type="text" id="ed-notes" value="${d.notes||''}" style="width:120px;padding:3px 5px"></td>
+        <td><input class="fi" type="text" id="ed-notes" value="${escHtml(d.notes||'')}" style="width:120px;padding:3px 5px"></td>
         <td style="padding:2px 4px"><input class="fi" type="number" id="ed-franking" min="0" max="100" step="any" style="width:64px;padding:3px 5px" placeholder="Frank%" title="Franking %" value="${d.frankingPct??""}"></td>
         <td style="white-space:nowrap;padding:6px 8px">
           <button class="btn btn-g" style="padding:4px 12px;font-size:11px" onclick="saveEditDiv()">&#10003; SAVE</button>
@@ -4159,11 +4386,12 @@ function renderDividends(){
     return `<tr>
       <td>${d.date}</td>
       <td><b>${displaySymbol(d.symbol)}</b></td>
+      <td><span style="font-size:10px;padding:2px 6px;border-radius:12px;background:${getPersonColour(getSymbolOwner(d.symbol))}22;color:${getPersonColour(getSymbolOwner(d.symbol))}">${getPersonLabel(getSymbolOwner(d.symbol))}</span></td>
       <td><span class="badge b-etf" style="font-size:10px">${TYPE_LABEL[d.type]||d.type}</span></td>
       <td style="text-align:right" class="pos">$${(+d.amount).toFixed(2)}</td>
       <td style="text-align:right;font-family:var(--mono);color:var(--blue);font-size:12px">$${grossUpDiv(+d.amount||0,d.frankingPct||0).toFixed(2)}</td>
       <td style="text-align:right;color:var(--text3);font-size:11px">${d.frankingPct!=null?d.frankingPct+"%":"—"}</td>
-      <td style="color:var(--text3);font-size:11px">${d.notes||''}</td>
+      <td style="color:var(--text3);font-size:11px">${escHtml(d.notes||'')}</td>
       <td style="white-space:nowrap;padding:4px 6px">
         <button style="${EDIT_BTN}" onclick="doEditDiv('${d.id}')">&#9998; EDIT</button>
         <button class="del-btn" onclick="delDiv(${idxMap[d.id]})">&#10005;</button>
@@ -4198,6 +4426,7 @@ function renderDividends(){
 
 
 function delDiv(idx){
+  if(idx < 0 || idx >= dividends.length){ notify('Dividend not found.','err'); return; }
   if(!confirm('Delete this dividend entry?')) return;
   dividends.splice(idx,1); save();
   renderDividends(); renderDivCharts(); renderDivCards();
@@ -4206,7 +4435,7 @@ function delDiv(idx){
 
 
 // ── PROPERTY ──────────────────────────────────────────────────────────
-let properties = JSON.parse(localStorage.getItem('pt_props')||'[]');
+let properties = (()=>{try{return JSON.parse(localStorage.getItem('pt_props')||'[]');}catch(e){return [];}})() ;
 
 function doEditDiv(id){
   editingDivId = +id;  // uid() returns a number; coerce from onclick string
@@ -4333,6 +4562,65 @@ function readSuperForm(){
   };
 }
 
+function calcCarryForward(contrib, currentBalance){
+  // ATO Carry-forward concessional contributions (from FY2020 onwards)
+  // Only available if super balance < $500,000 at 30 Jun of prior year
+  const BALANCE_THRESHOLD = 500000;
+  const eligible = !currentBalance || currentBalance < BALANCE_THRESHOLD;
+
+  // CC caps per financial year
+  const CC_CAPS = {
+    2021: 27500,  // FY2021 cap
+    2022: 27500,  // FY2022 cap
+    2023: 27500,  // FY2023 cap
+    2024: 27500,  // FY2024 cap
+    2025: 30000,  // FY2025 cap (increased)
+    2026: 30000,  // FY2026 current cap
+  };
+
+  // FY2026 carry-forward window: last 5 years (FY2021–FY2025)
+  const CUR_FY = 2026;
+  const windowYears = [2021, 2022, 2023, 2024, 2025];
+
+  // Per-year unused amounts
+  const breakdown = windowYears.map(yr => {
+    const cap  = CC_CAPS[yr] || 27500;
+    const entered = contrib[`cc_fy${yr}`];
+    const used = entered != null ? +entered : cap;  // blank = assume cap fully used
+    const unused = Math.max(0, cap - used);
+    return { yr, cap, used, unused };
+  });
+
+  const totalUnused = breakdown.reduce((s, r) => s + r.unused, 0);
+
+  // Current year amounts
+  const curEmp = +(contrib.empCC_cur || 0);
+  const curPer = +(contrib.perCC_cur || 0);
+  const curCC  = curEmp + curPer;
+  const curCap = CC_CAPS[CUR_FY] || 30000;
+
+  // How much carry-forward has been used this year
+  // (current CC above the base cap)
+  const cfUsedThisYear = Math.max(0, curCC - curCap);
+  const cfRemainingThisYear = eligible ? Math.max(0, totalUnused - cfUsedThisYear) : 0;
+
+  // Total CC cap available this year (base + carry-forward)
+  const totalCapThisYear = eligible ? curCap + totalUnused : curCap;
+
+  return {
+    eligible,
+    currentBalance: currentBalance || 0,
+    breakdown,
+    totalUnused,
+    curCC,
+    curCap,
+    cfUsedThisYear,
+    cfRemainingThisYear,
+    totalCapThisYear,
+  };
+}
+
+
 function calcSuperPreview(){
   // Reads current form state and shows a live ROI preview
   // Uses the same logic as renderSuperAccounts
@@ -4381,11 +4669,11 @@ function calcSuperPreview(){
   const fmtPct = v => v === null ? '—' : (v>=0?'+':'')+v.toFixed(2)+'%';
 
   const items = [
-    {l:'Current Balance',          v:'$'+n2(curBal),           c:'neu'},
-    prevBal  ? {l:'FY'+PREV_FY+' Balance', v:'$'+n2(prevBal), c:'neu'} : null,
+    {l:'Current Balance',          v:n2(curBal),           c:'neu'},
+    prevBal  ? {l:'FY'+PREV_FY+' Balance', v:n2(prevBal), c:'neu'} : null,
     roi_cur  ? {l:'FY'+CUR_FY+' Inv. Gain',  v:fmt(roi_cur.gain),       c:clr(roi_cur.gain)}  : null,
     roi_cur  ? {l:'FY'+CUR_FY+' ROI',        v:fmtPct(roi_cur.roi),     c:clr(roi_cur.roi)}   : null,
-    prev2Bal ? {l:'FY'+PREV2_FY+' Balance',  v:'$'+n2(prev2Bal),        c:'neu'}               : null,
+    prev2Bal ? {l:'FY'+PREV2_FY+' Balance',  v:n2(prev2Bal),        c:'neu'}               : null,
     roi_prev ? {l:'FY'+PREV_FY+' Inv. Gain', v:fmt(roi_prev.gain),      c:clr(roi_prev.gain)} : null,
     roi_prev ? {l:'FY'+PREV_FY+' ROI',       v:fmtPct(roi_prev.roi),    c:clr(roi_prev.roi)}  : null,
   ].filter(Boolean);
@@ -4570,9 +4858,9 @@ function renderSuperAccounts(){
   const collapsible = (title, body) => `
       <div style="background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:14px;margin-top:12px">
         <div onclick="toggleSuperSection(this)" style="font-family:var(--mono);font-size:10px;color:var(--text2);letter-spacing:.1em;text-transform:uppercase;margin-bottom:0;display:flex;justify-content:space-between;align-items:center;cursor:pointer;user-select:none">
-          ${title}<span style="font-size:16px;color:var(--text3);line-height:1;font-weight:300">+</span>
+          ${title}<span style="font-size:16px;color:var(--blue);line-height:1;font-weight:300">−</span>
         </div>
-        <div class="su-section-body" style="display:none;margin-top:12px">
+        <div class="su-section-body" style="margin-top:12px">
           ${body}
         </div>
       </div>`;
@@ -4597,7 +4885,7 @@ function renderSuperAccounts(){
     const fmtROI  = r => r === null ? '—'
       : `<span class="${r.roi>=0?'pos':'neg'}">${r.roi>=0?'+':''}${r.roi.toFixed(2)}%</span>`;
     const fmtGain = r => r === null ? '—'
-      : `<span class="${r.gain>=0?'pos':'neg'}">${r.gain>=0?'+':''}$${n2(r.gain)}</span>`;
+      : `<span class="${r.gain>=0?'pos':'neg'}">${r.gain>=0?'+':''}${n2(r.gain)}</span>`;
 
     const contribCur  = empCC_cur  + perCC_cur;
     const contribPrev = empCC_prev + perCC_prev;
@@ -4609,27 +4897,96 @@ function renderSuperAccounts(){
             <div>
               <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${CUR_FY} — in progress</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                ${stat('Employer CC',     empCC_cur  ? '$'+n2(empCC_cur)          : '—')}
-                ${stat('Personal CC',     perCC_cur  ? '$'+n2(perCC_cur)          : '—')}
-                ${stat('Total CC',        contribCur ? '$'+n2(contribCur)         : '—')}
-                ${stat('After-tax (85%)', contribCur ? '$'+n2(contribCur*0.85)    : '—', 'pos')}
-                ${ncc_cur  ? stat('Non-Concessional', '$'+n2(ncc_cur))            : ''}
+                ${stat('Employer CC',     empCC_cur  ? n2(empCC_cur)          : '—')}
+                ${stat('Personal CC',     perCC_cur  ? n2(perCC_cur)          : '—')}
+                ${stat('Total CC',        contribCur ? n2(contribCur)         : '—')}
+                ${stat('After-tax (85%)', contribCur ? n2(contribCur*0.85)    : '—', 'pos')}
+                ${ncc_cur  ? stat('Non-Concessional', n2(ncc_cur))            : ''}
               </div>
             </div>
             <div>
               <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${PREV_FY} — completed</div>
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                ${stat('Employer CC',     empCC_prev  ? '$'+n2(empCC_prev)         : '—')}
-                ${stat('Personal CC',     perCC_prev  ? '$'+n2(perCC_prev)         : '—')}
-                ${stat('Total CC',        contribPrev ? '$'+n2(contribPrev)        : '—')}
-                ${stat('After-tax (85%)', contribPrev ? '$'+n2(contribPrev*0.85)   : '—', 'pos')}
-                ${ncc_prev ? stat('Non-Concessional', '$'+n2(ncc_prev))            : ''}
+                ${stat('Employer CC',     empCC_prev  ? n2(empCC_prev)         : '—')}
+                ${stat('Personal CC',     perCC_prev  ? n2(perCC_prev)         : '—')}
+                ${stat('Total CC',        contribPrev ? n2(contribPrev)        : '—')}
+                ${stat('After-tax (85%)', contribPrev ? n2(contribPrev*0.85)   : '—', 'pos')}
+                ${ncc_prev ? stat('Non-Concessional', n2(ncc_prev))            : ''}
               </div>
             </div>
           </div>` :
       `<div style="color:var(--text3);font-size:11px">No contributions entered yet. Edit this account and fill in the contribution fields above.</div>`;
 
     const contribPanel = collapsible('CONTRIBUTIONS', contribBody);
+
+    // ── CARRY-FORWARD panel ───────────────────────────────────────
+    const cf = calcCarryForward(a.contrib||{}, a.contrib?.bal_prevyr || a.balance);
+    const cfRows = cf.breakdown.map(r => {
+      const pct = r.cap > 0 ? Math.round(r.used/r.cap*100) : 0;
+      return `
+        <div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;align-items:center">
+          <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">FY${r.yr}</span>
+          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
+            <div style="height:100%;width:${Math.min(100,pct)}%;background:${pct>=100?'var(--neg)':'var(--pos)'};border-radius:3px"></div>
+          </div>
+          <span style="font-family:var(--mono);font-size:11px;text-align:right;min-width:100px">
+            ${r.unused > 0
+              ? `<span style='color:#818cf8'>${n2(r.unused)} unused</span>`
+              : `<span style='color:var(--text3)'>fully used</span>`}
+          </span>
+        </div>`;
+    }).join('');
+
+    const cfBody = `
+      <div style="padding:4px 0">
+        ${!cf.eligible ? `
+          <div style="padding:10px;background:rgba(239,68,68,0.1);border-radius:6px;
+            color:var(--neg);font-size:12px;margin-bottom:12px">
+            ⚠ Not eligible — super balance ≥ $500,000 at 30 Jun FY2025
+            (${n2(cf.currentBalance)})
+          </div>` : ''}
+
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px">
+          ${stat('Available to Use',
+            cf.eligible ? n2(cf.cfRemainingThisYear) : '—',
+            cf.cfRemainingThisYear>0 ? 'pos' : 'neu',
+            'unused from last 5 FYs')}
+          ${stat('Total Cap FY2026',
+            n2(cf.totalCapThisYear),
+            'neu',
+            'base $30k + carry-forward')}
+          ${stat('CC Used This Year',
+            n2(cf.curCC),
+            cf.curCC > cf.totalCapThisYear ? 'neg' : cf.curCC > cf.curCap ? 'pos' : 'neu',
+            cf.curCC > cf.curCap ? 'includes carry-forward' : 'of $30k base cap')}
+        </div>
+
+        <div style="font-size:10px;color:var(--text3);font-family:var(--mono);
+          letter-spacing:.05em;margin-bottom:8px">UNUSED CAP BY YEAR</div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          ${cfRows}
+        </div>
+
+        ${cf.totalUnused > 0 && cf.eligible ? `
+          <div style="margin-top:14px;padding:12px;background:rgba(129,140,248,0.1);
+            border-radius:6px;border:1px solid rgba(129,140,248,0.3);font-size:12px;line-height:1.6">
+            <b style="color:#818cf8">${n2(cf.totalUnused)}</b> in unused concessional cap
+            available to carry forward into FY2026.
+            ${cf.curCC > cf.curCap
+              ? `Currently using <b style="color:#818cf8">${n2(cf.cfUsedThisYear)}</b>
+                 of carry-forward this year — <b>${n2(cf.cfRemainingThisYear)}</b> still available.`
+              : `You can contribute up to an extra <b style="color:#818cf8">${n2(cf.cfRemainingThisYear)}</b>
+                 before 30 Jun 2026 to use the full carry-forward.`}
+          </div>` : ''}
+
+        <div style="font-size:10px;color:var(--text3);margin-top:10px;line-height:1.6">
+          Enter actual CC totals used each year in the Contributions section above.
+          Leave blank = assume full cap was used (no carry-forward for that year).
+          Carry-forward only available if balance &lt; $500,000 at 30 Jun FY2025.
+          ATO caps: FY2021–FY2024 = $27,500/yr · FY2025–FY2026 = $30,000/yr
+        </div>
+      </div>`;
+    const cfPanel = collapsible('CARRY-FORWARD CC', cfBody);
 
     // ── INVESTMENT RETURN panel ──────────────────────────────────
     const needsFYData = prevBal === null;
@@ -4639,22 +4996,22 @@ function renderSuperAccounts(){
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${CUR_FY} — Current vs FY${PREV_FY} end</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${stat('Start (FY'+PREV_FY+')',  '$'+n2(prevBal))}
-              ${stat('End (Current)',           '$'+n2(curBal))}
-              ${stat('After-tax CC',            roi_cur ? '$'+n2(roi_cur.afterTaxCC)       : '$0.00')}
-              ${stat('Inv. Gain',               roi_cur ? fmtGain(roi_cur)                  : '$'+n2(curBal-prevBal))}
-              ${stat('Avg Balance',             '$'+n2((prevBal+curBal)/2))}
+              ${stat('Start (FY'+PREV_FY+')',  n2(prevBal))}
+              ${stat('End (Current)',           n2(curBal))}
+              ${stat('After-tax CC',            roi_cur ? n2(roi_cur.afterTaxCC)       : '$0.00')}
+              ${stat('Inv. Gain',               roi_cur ? fmtGain(roi_cur)                  : n2(curBal-prevBal))}
+              ${stat('Avg Balance',             n2((prevBal+curBal)/2))}
               ${stat('ROI %',                   roi_cur ? fmtROI(roi_cur)                   : '—')}
             </div>
           </div>
           <div>
             <div style="font-size:10px;color:var(--text3);margin-bottom:8px;font-family:var(--mono)">FY${PREV_FY} — FY${PREV_FY} vs FY${PREV2_FY} end</div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-              ${prev2Bal !== null ? stat('Start (FY'+PREV2_FY+')', '$'+n2(prev2Bal)) : stat('Start (FY'+PREV2_FY+')', '—')}
-              ${stat('End (FY'+PREV_FY+')',      '$'+n2(prevBal))}
-              ${stat('After-tax CC',            roi_prev ? '$'+n2(roi_prev.afterTaxCC)      : '$0.00')}
+              ${prev2Bal !== null ? stat('Start (FY'+PREV2_FY+')', n2(prev2Bal)) : stat('Start (FY'+PREV2_FY+')', '—')}
+              ${stat('End (FY'+PREV_FY+')',      n2(prevBal))}
+              ${stat('After-tax CC',            roi_prev ? n2(roi_prev.afterTaxCC)      : '$0.00')}
               ${stat('Inv. Gain',               roi_prev ? fmtGain(roi_prev)                : '—')}
-              ${stat('Avg Balance',             prev2Bal !== null ? '$'+n2((prev2Bal+prevBal)/2) : '—')}
+              ${stat('Avg Balance',             prev2Bal !== null ? n2((prev2Bal+prevBal)/2) : '—')}
               ${stat('ROI %',                   roi_prev ? fmtROI(roi_prev)                 : '—')}
             </div>
           </div>
@@ -4669,7 +5026,7 @@ function renderSuperAccounts(){
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
         <div style="display:flex;align-items:center;gap:8px">
           <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
-          <div style="font-family:var(--mono);font-size:14px;font-weight:600">${a.name}</div>
+          <div style="font-family:var(--mono);font-size:14px;font-weight:600">${escHtml(a.name)}</div>
         </div>
         <div style="display:flex;gap:8px">
           <button class="btn" onclick="editSuperAccount(this)" data-id="${a.id}">\u270F EDIT</button>
@@ -4677,13 +5034,14 @@ function renderSuperAccounts(){
         </div>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
-        ${stat('Current Balance', '$'+n2(curBal))}
-        ${prevBal  !== null ? stat('FY'+PREV_FY+' Balance',  '$'+n2(prevBal))  : ''}
-        ${prev2Bal !== null ? stat('FY'+PREV2_FY+' Balance', '$'+n2(prev2Bal)) : ''}
+        ${stat('Current Balance', n2(curBal))}
+        ${prevBal  !== null ? stat('FY'+PREV_FY+' Balance',  n2(prevBal))  : ''}
+        ${prev2Bal !== null ? stat('FY'+PREV2_FY+' Balance', n2(prev2Bal)) : ''}
         ${roi_cur  ? stat('FY'+CUR_FY+' ROI',  fmtROI(roi_cur),  '') : ''}
         ${roi_prev ? stat('FY'+PREV_FY+' ROI', fmtROI(roi_prev), '') : ''}
       </div>
       ${contribPanel}
+      ${cfPanel}
       ${roiPanel}
     </div>`;
   }).join('');
@@ -4879,11 +5237,11 @@ function buildSyncPayload(){
       pt_spending:       spendingData,
       pt_prices:         prices,
       cf_worker_url:     localStorage.getItem('cf_worker_url')||'',
-      pt_drp_carry:      JSON.parse(localStorage.getItem('pt_drp_carry')||'{}'),
+      pt_drp_carry:      (()=>{try{return JSON.parse(localStorage.getItem('pt_drp_carry')||'{}');}catch(e){return {};}})() ,
       pt_brokers:        getCustomBrokers(),
       pt_super:          superAccounts,
       su_combined_color: localStorage.getItem('su_combined_color')||'#ffffff',
-      pt_tax: taxData,
+      pt_tax: taxData, pt_stock_owners: stockOwners, pt_extra_persons: extraPersons,
       pt_tax:  taxData,
     }
   };
@@ -4949,7 +5307,11 @@ async function syncPush(){
 
 let _remotePending = null;
 let taxFY = 0; // 0 = current FY, or specific year e.g. 2025
-let taxData = JSON.parse(localStorage.getItem('pt_tax')||'{}'); // {FY: {lumia:{salary,withheld,payg,...}, chilli:{...}, props:{propId:{expenses,depr_bldg,depr_pe}}}}
+let taxData = (() => { try { return JSON.parse(localStorage.getItem('pt_tax')||'{}'); } catch(e){ return {}; } })();
+// Stock ownership map: {SYMBOL: 'lumia'|'chilli'|'joint'|customName}
+let stockOwners = (()=>{try{return JSON.parse(localStorage.getItem('pt_stock_owners')||'{}');}catch(e){return {};}})();
+// Known persons list (lumia + chilli are built-in, others user-defined)
+let extraPersons = (()=>{try{return JSON.parse(localStorage.getItem('pt_extra_persons')||'[]');}catch(e){return [];}})(); // {FY: {lumia:{salary,withheld,payg,...}, chilli:{...}, props:{propId:{expenses,depr_bldg,depr_pe}}}}
 
 async function syncPull(){
   // Always read token fresh from the input field first
@@ -4967,6 +5329,8 @@ async function syncPull(){
     let gistId = localStorage.getItem('pt_sync_gist_id')||'';
     const gistEl = $('sync-gist-id');
     if(gistEl && gistEl.value.trim()) gistId = gistEl.value.trim();
+    // Sanitize gistId: only allow alphanumeric and hyphens, no path traversal
+    gistId = gistId.replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 64);
 
     if(!gistId){
       setSyncStatus('No Gist ID — push first or paste Gist ID in Settings','var(--text3)');
@@ -5047,6 +5411,8 @@ function applyRemoteData(remote){
   if(d.pt_drp_carry)     localStorage.setItem('pt_drp_carry',     JSON.stringify(d.pt_drp_carry));
   if(d.pt_brokers && d.pt_brokers.length) saveCustomBrokers(d.pt_brokers);
   if(d.pt_super)         { superAccounts = d.pt_super; saveSuperAccounts(); }
+  if(d.pt_stock_owners){ stockOwners=d.pt_stock_owners; saveStockOwners(); }
+  if(d.pt_extra_persons){ extraPersons=d.pt_extra_persons; saveExtraPersons(); }
   if(d.pt_tax){ taxData = d.pt_tax; saveTaxData(); }
   if(d.su_combined_color){ suCombinedColor = d.su_combined_color;
                            localStorage.setItem('su_combined_color', d.su_combined_color); }
@@ -5532,7 +5898,7 @@ function renderProperties(){
       <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
         <div>
           <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-            <div style="font-family:var(--mono);font-size:15px;font-weight:600">${p.name}</div>
+            <div style="font-family:var(--mono);font-size:15px;font-weight:600">${escHtml(p.name)}</div>
             <span style="font-size:10px;padding:2px 8px;border-radius:12px;font-family:var(--mono);background:${({lumia:"#1e3a5f",chilli:"#4a1942",joint:"#1a3a2a"})[p.owner||"lumia"]||"#1e3a5f"};color:${({lumia:"#60a5fa",chilli:"#f472b6",joint:"#34d399"})[p.owner||"lumia"]||"#60a5fa"}">${({lumia:"Lumia",chilli:"Chilli",joint:"Joint 50/50"})[p.owner||"lumia"]||"Lumia"}</span>
           </div>
           <div style="font-size:11px;color:var(--text3);margin-top:3px;font-family:var(--mono)">
@@ -6308,6 +6674,8 @@ function backupExport(){
       pt_super:      superAccounts,
       su_combined_color: localStorage.getItem('su_combined_color') || '#ffffff',
       pt_tax:       taxData,
+      pt_stock_owners: stockOwners,
+      pt_extra_persons: extraPersons,
       cf_worker_code: WORKER_CODE,
     }
   };
@@ -6390,6 +6758,15 @@ function backupImport(input){
 
 function backupConfirm(){
   if(!_pendingRestore) return;
+  // Validate backup structure before applying
+  if(!_pendingRestore.data || typeof _pendingRestore.data !== 'object'){
+    notify('Invalid backup structure.','err'); return;
+  }
+  // Reject if trades/divs arrays are suspiciously large (>50,000 entries)
+  const td = _pendingRestore.data;
+  if((td.pt_trades||[]).length > 50000 || (td.pt_divs||[]).length > 50000){
+    notify('Backup contains unusually large data. Aborting for safety.','err'); return;
+  }
   const d = _pendingRestore.data;
 
   // Restore all data
@@ -6409,6 +6786,8 @@ function backupConfirm(){
   if(d.pt_brokers && d.pt_brokers.length) saveCustomBrokers(d.pt_brokers);
   if(d.pt_super){ superAccounts = d.pt_super; saveSuperAccounts(); }
   if(d.pt_tax){ taxData = d.pt_tax; saveTaxData(); }
+  if(d.pt_stock_owners){ stockOwners = d.pt_stock_owners; saveStockOwners(); }
+  if(d.pt_extra_persons){ extraPersons = d.pt_extra_persons; saveExtraPersons(); }
   if(d.su_combined_color){ suCombinedColor = d.su_combined_color; localStorage.setItem('su_combined_color', d.su_combined_color); }
   // Worker code is embedded in the app — no need to restore it
 
@@ -6481,7 +6860,7 @@ function buildExportSheets(){
     const gross = (+t.units||0) * (+t.price||0);
     const net   = t.type === 'buy' ? gross + (+t.fees||0) : gross - (+t.fees||0);
     return {
-      date: t.date, type: t.type, symbol: t.symbol, asset_type: t.assetType,
+      date: t.date, type: t.type, symbol: csvSafe(t.symbol), asset_type: t.assetType,
       units: +t.units||0, price: +t.price||0,
       gross_value: +gross.toFixed(4), fees: +t.fees||0, net_value: +net.toFixed(4),
       source: t.source||'', notes: t.notes||'',
@@ -6502,7 +6881,7 @@ function buildExportSheets(){
     const totalInit = splits.reduce((s,sp)=>s+(+sp.initial||0),0);
     const wtRate    = totalBal>0 ? splits.reduce((s,sp)=>s+((+sp.balance||0)/totalBal)*(+sp.rate||0),0) : 0;
     return {
-      name: p.name, type: p.propType||'', purchase_date: p.purchaseDate||'',
+      name: csvSafe(p.name), type: p.propType||'', purchase_date: p.purchaseDate||'',
       purchase_price: p.purchasePrice||0, purchase_costs: p.purchaseCosts||0,
       current_value: p.currentValue||0,
       loan_total_balance: +totalBal.toFixed(2),
@@ -7147,8 +7526,8 @@ function taxKey(fy){ return 'FY'+fy; }
 function getTaxRecord(fy){
   const k = taxKey(fy);
   const defaults = {
-    lumia:  {salary:0, withheld:0, payg:0, hecs:0, privateHealth:false},
-    chilli: {salary:0, withheld:0, payg:0, hecs:0, privateHealth:false},
+    lumia:  {salary:0, withheld:0, payg:0, hecs:0, privateHealth:false, sacrifice:0},
+    chilli: {salary:0, withheld:0, payg:0, hecs:0, privateHealth:false, sacrifice:0},
     privateHealthFamily: false,
     dependants: 0,
     props:  {},
@@ -7213,7 +7592,10 @@ function calcHECS(income, hecsDebt){
   ];
   const tier = tiers.find(([limit]) => income < limit);
   const rate = tier ? tier[1] : 0.10;
-  return income >= 54435 ? Math.round(income * rate) : 0;
+  if(income < 54435) return 0;
+  const repayment = Math.round(income * rate);
+  // ATO caps repayment at remaining debt balance
+  return Math.min(repayment, hecsDebt);
 }
 
 // Medicare Levy Surcharge (MLS) — applies if NO private hospital cover
@@ -7302,6 +7684,85 @@ function calcHECSRate(income){
 }
 
 
+function renderOwnershipGrid(){
+  const grid = $('ownership-grid');
+  const personsList = $('persons-list');
+  if(!grid) return;
+
+  // Show current persons as chips
+  if(personsList){
+    personsList.innerHTML = getAllPersons().map(p=>`
+      <span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;
+        padding:3px 10px;border-radius:16px;
+        background:${getPersonColour(p)}33;color:${getPersonColour(p)};
+        font-family:var(--mono)">
+        ${escHtml(getPersonLabel(p))}
+        ${p!=='lumia'&&p!=='chilli'?`<button onclick="removePerson('${escHtml(p)}')"
+          style="background:none;border:none;color:inherit;cursor:pointer;padding:0 0 0 4px;font-size:12px">×</button>`:''}
+      </span>`).join('');
+  }
+
+  // Show all holdings with owner select
+  // Include current holdings AND all-time traded symbols (sold/worthless)
+  const currentHoldings = calcH();
+  const currentSyms = new Set(currentHoldings.map(h=>h.symbol));
+  const allSyms = [...new Set(trades.map(t=>t.symbol).filter(Boolean))].sort();
+  if(!allSyms.length){
+    grid.innerHTML = '<div style="color:var(--text3);font-size:12px">No trades yet.</div>';
+    return;
+  }
+  grid.innerHTML = allSyms.map(sym=>{
+    const h = currentHoldings.find(x=>x.symbol===sym);
+    const isCurrent = currentSyms.has(sym);
+    const label = isCurrent
+      ? `${escHtml(displaySymbol(sym))}`
+      : `${escHtml(displaySymbol(sym))} <span style='color:var(--text3);font-size:9px'>(sold)</span>`;
+    const own = getSymbolOwner(sym);
+    const col = getPersonColour(own);
+    return `<div style="display:flex;align-items:center;gap:8px;
+      padding:8px 12px;background:var(--surface);border-radius:6px;
+      border:1px solid ${isCurrent?'var(--border)':'rgba(255,255,255,0.05)'};
+      opacity:${isCurrent?'1':'0.65'}">
+      <span style="font-family:var(--mono);font-size:12px;font-weight:600;
+        flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">
+        ${label}
+      </span>
+      <select style="background:${col}22;color:${col};border:1px solid ${col}55;
+        border-radius:8px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer"
+        onchange="changeSymbolOwnerSettings('${escHtml(sym)}',this.value)">
+        ${buildOwnerOptions(own)}
+        <option value="joint" ${own==='joint'?'selected':''}>Joint</option>
+      </select>
+    </div>`;
+  }).join('');
+}
+
+function changeSymbolOwnerSettings(sym, newOwner){
+  setSymbolOwner(sym, newOwner);
+  renderOwnershipGrid();
+  // Refresh any visible tabs
+  if($('panel-holdings2')?.classList.contains('active')) renderHD();
+  if($('panel-dividends')?.classList.contains('active')){ renderDividends(); renderDivCards(); }
+  renderTax();
+  notify(escHtml(displaySymbol(sym))+' → '+escHtml(getPersonLabel(newOwner))+' ✓');
+}
+
+function removePerson(key){
+  if(key==='lumia'||key==='chilli'){ notify('Cannot remove built-in persons','err'); return; }
+  if(!confirm('Remove '+getPersonLabel(key)+'? Their stocks will revert to Joint.')) return;
+  extraPersons = extraPersons.filter(p=>p!==key);
+  saveExtraPersons();
+  // Reassign their stocks to joint
+  for(const sym of Object.keys(stockOwners)){
+    if(stockOwners[sym]===key) stockOwners[sym]='joint';
+  }
+  saveStockOwners();
+  renderOwnershipGrid();
+  renderTax();
+  notify(getPersonLabel(key)+' removed ✓');
+}
+
+
 function renderTax(){
   const panel = document.getElementById('panel-tax');
   if(!panel) return;
@@ -7367,8 +7828,19 @@ function renderTax(){
   // All sells (no person split for shares/crypto — taxed by owner)
   const cgt = calcCGT(sells);
 
-  // ── Dividends in FY (grossed up, franking credits) ────────────
+  // ── Dividends in FY — attributed by stock ownership ────────────
   const fyDivs = dividends.filter(d=>inFY(d.date)&&d.type!=='drp');
+  // Build per-person dividend totals based on stock ownership
+  function personDivs(personKey){
+    return fyDivs.filter(d=>{
+      const own = getSymbolOwner(d.symbol);
+      return own===personKey || own==='joint';
+    });
+  }
+  function personDivShare(d, personKey){
+    const own = getSymbolOwner(d.symbol);
+    return own==='joint' ? 0.5 : 1.0;
+  }
   const totalDiv   = fyDivs.reduce((s,d)=>s+(+d.amount||0),0);
   const totalFrank = fyDivs.reduce((s,d)=>s+frankingCredit(+d.amount||0, d.frankingPct||0),0);
 
@@ -7376,9 +7848,10 @@ function renderTax(){
   function propPnL(owner){
     let netRent=0, netExpenses=0;
     properties.forEach(p=>{
-      const isOwner = p.owner===owner || (p.owner==='joint');
+      const pOwner = p.owner || 'lumia';  // default old properties to lumia
+      const isOwner = pOwner===owner || pOwner==='joint';
       if(!isOwner) return;
-      const share = p.owner==='joint' ? 0.5 : 1;
+      const share = pOwner==='joint' ? 0.5 : 1;
       const m = propMetrics(p);
       const annualRent = (p.weeklyRent||0)*52*share;
       const annualInterest = m.monthlyInterest*12*share;
@@ -7397,29 +7870,60 @@ function renderTax(){
   // ── Tax calc per person ───────────────────────────────────────
   function personTax(personKey, propPnLResult, cgtResult){
     const p = rec[personKey] || {};
-    const salary   = +p.salary   || 0;
-    const withheld = +p.withheld || 0;
-    const payg     = +p.payg     || 0;
-    const hecsDebt = +p.hecs     || 0;
-    const hasPrivH = !!(p.privateHealth || rec.privateHealthFamily);
+    const salary      = +p.salary      || 0;
+    const withheld    = +p.withheld    || 0;
+    const payg        = +p.payg        || 0;
+    const hecsDebt    = +p.hecs        || 0;
+    const sacrifice   = +p.sacrifice   || 0;  // pre-tax salary sacrifice to super
+    const hasPrivH    = !!(p.privateHealth || rec.privateHealthFamily);
     const { netPropLoss, netPropGain, netRent, netExpenses } = propPnLResult;
-    const myCGT   = cgtResult.netGain / 2;
-    const myDiv   = totalDiv / 2;
-    const myFrank = totalFrank / 2;
-    const taxableIncome = salary + myDiv + myFrank + netPropGain - netPropLoss + myCGT;
-    const grossTax = calcTax(Math.max(0, taxableIncome));
-    const hecsRep  = calcHECS(taxableIncome, hecsDebt);
-    const otherKey = personKey === 'lumia' ? 'chilli' : 'lumia';
-    const otherTI  = (+rec[otherKey]?.salary||0) + totalDiv/2 + totalFrank/2;
+    const myCGT    = cgtResult.netGain / 2;
+    // Dividends attributed by actual stock ownership (not 50/50)
+    const _myDivs  = fyDivs.filter(d=>{
+      const own = getSymbolOwner(d.symbol);
+      return own===personKey || own==='joint';
+    });
+    const myDiv    = _myDivs.reduce((s,d)=>{
+      const share = getSymbolOwner(d.symbol)==='joint' ? 0.5 : 1.0;
+      return s+(+d.amount||0)*share;
+    },0);
+    const myFrank  = _myDivs.reduce((s,d)=>{
+      const share = getSymbolOwner(d.symbol)==='joint' ? 0.5 : 1.0;
+      return s+frankingCredit((+d.amount||0)*share, d.frankingPct||0);
+    },0);
+    // Salary sacrifice reduces taxable income
+    const taxableIncome = (salary - sacrifice) + myDiv + myFrank + netPropGain - netPropLoss + myCGT;
+    const grossTax  = calcTax(Math.max(0, taxableIncome));
+    const hecsRep   = calcHECS(Math.max(0, taxableIncome), hecsDebt);
+    // Division 293: extra 15% tax on concessional contributions if income > $250,000
+    // Concessional contributions = employer SG (est. 12% of salary) + salary sacrifice
+    const sgRate       = 0.120;  // SG rate FY2025/26 (12% from 1 Jul 2025)
+    const empSuper     = salary * sgRate;
+    const totalConcess = empSuper + sacrifice;
+    const div293Income = taxableIncome + totalConcess;  // income for Div293 purposes
+    const div293Threshold = 250000;
+    let div293 = 0;
+    if(div293Income > div293Threshold && totalConcess > 0){
+      const excess = div293Income - div293Threshold;
+      div293 = Math.round(Math.min(totalConcess, excess) * 0.15);
+    }
+    const otherKey     = personKey === 'lumia' ? 'chilli' : 'lumia';
+    const otherSalary  = +rec[otherKey]?.salary||0;
+    const otherSacr    = +rec[otherKey]?.sacrifice||0;
+    const _otherDivs   = personDivs(otherKey);
+    const otherDiv     = _otherDivs.reduce((s,d)=>s+(+d.amount||0)*personDivShare(d,otherKey),0);
+    const otherTI      = (otherSalary - otherSacr) + otherDiv;
     const familyIncome = taxableIncome + otherTI;
-    const deps     = +(rec.dependants||0);
-    const mls      = calcMLS(taxableIncome, familyIncome, hasPrivH, deps);
-    const totalLiability = grossTax + hecsRep + mls;
-    const netTax   = Math.max(0, totalLiability - withheld - payg - myFrank);
-    const refund   = Math.max(0, withheld + payg + myFrank - totalLiability);
-    return { salary, withheld, payg, myDiv, myFrank, netPropLoss, netPropGain,
-             netRent, netExpenses, myCGT, taxableIncome, grossTax, hecsRep, mls,
-             totalLiability, netTax, refund, hecsDebt, hasPrivH };
+    const deps         = +(rec.dependants||0);
+    const mls          = calcMLS(taxableIncome, familyIncome, hasPrivH, deps);
+    const totalLiability = grossTax + hecsRep + mls + div293;
+    const netTax    = Math.max(0, totalLiability - withheld - payg - myFrank);
+    const refund    = Math.max(0, withheld + payg + myFrank - totalLiability);
+    return { salary, withheld, payg, sacrifice, myDiv, myFrank,
+             netPropLoss, netPropGain, netRent, netExpenses,
+             myCGT, taxableIncome, grossTax, hecsRep, mls, div293,
+             totalLiability, netTax, refund, hecsDebt, hasPrivH,
+             empSuper, totalConcess, div293Income };
   }
 
   const lumProp   = propPnL('lumia');
@@ -7441,7 +7945,7 @@ function renderTax(){
          oninput="taxPropUpdate(this)" onblur="renderTax()"></div>`;
     return `<div class="fs" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
-        <div style="font-family:var(--mono);font-size:13px;font-weight:600">${p.name}</div>
+        <div style="font-family:var(--mono);font-size:13px;font-weight:600">${escHtml(p.name)}</div>
         <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(59,130,246,0.15);color:#60a5fa">${ownerLabel}${p.owner==='joint'?' — each 50%':''}</span>
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
@@ -7497,9 +8001,18 @@ function renderTax(){
               placeholder="e.g. 0" value="${pRec.payg||''}"
               oninput="taxInpSave('${person}','payg',+this.value,${fy})" onblur="renderTax()"></div>
           <div style="grid-column:1/-1">
+            <label class="fl">Salary Sacrifice to Super
+              <span style="color:var(--text3);font-size:10px">(pre-tax · reduces taxable income)</span>
+            </label>
+            <input type="number" class="fi" style="padding:4px 8px"
+              placeholder="e.g. 10000 — leave blank if none" value="${pRec.sacrifice||''}"
+              oninput="taxInpSave('${person}','sacrifice',+this.value,${fy})" onblur="renderTax()">
+            ${+pRec.sacrifice>0?`<div style="font-size:10px;color:var(--pos);margin-top:3px">✓ Reduces taxable income by ${n2(+pRec.sacrifice)}</div>`:''}
+          </div>
+          <div style="grid-column:1/-1">
             <label class="fl">HECS-HELP Debt (current balance)
               ${(+pRec.hecs>0&&+pRec.salary>0)?
-                `<span style="color:var(--neg);font-family:var(--mono);font-size:10px;margin-left:8px">est. repayment $${n2(calcHECS(+pRec.salary,+pRec.hecs))}/yr</span>`:
+                `<span style="color:var(--neg);font-family:var(--mono);font-size:10px;margin-left:8px">est. repayment ${n2(calcHECS(+pRec.salary,+pRec.hecs))}/yr</span>`:
                 `<span style="color:var(--text3);font-size:10px;margin-left:8px">enter salary + balance to estimate</span>`}
             </label>
             <input type="number" class="fi" style="padding:4px 8px"
@@ -7556,7 +8069,7 @@ function renderTax(){
           oninput="taxRecSave('dependants',+this.value,${fy})" onblur="renderTax()">
       </div>
       <div style="padding:8px 0;font-size:11px;color:var(--text3)">
-        MLS family threshold: $${n2(186000+Math.max(0,(+(rec.dependants||0)-1))*1500)}
+        MLS family threshold: ${n2(186000+Math.max(0,(+(rec.dependants||0)-1))*1500)}
         (base $186,000${+(rec.dependants||0)>1?' + $'+n2(Math.max(0,+(rec.dependants||0)-1)*1500)+' for '+Math.max(0,+(rec.dependants||0)-1)+' extra child'+(Math.max(0,+(rec.dependants||0)-1)>1?'ren':''):''})
       </div>
     </div>
@@ -7580,29 +8093,41 @@ function renderTax(){
         <th style="text-align:right;padding:6px 8px;font-size:12px;font-family:var(--mono);color:#f472b6">Chilli</th>
       </tr></thead>
       <tbody>
-        ${row('Gross Salary','$'+n2(lumTax.salary),'$'+n2(chiTax.salary))}
-        ${row('Dividend Income (cash)','$'+n2(lumTax.myDiv),'$'+n2(chiTax.myDiv),'','from dividends tab')}
-        ${row('Franking Credits','+$'+n2(lumTax.myFrank),'+$'+n2(chiTax.myFrank),'pos')}
-        ${row('Net Rental Income',lumTax.netRent>lumTax.netExpenses?'+$'+n2(lumTax.netRent-lumTax.netExpenses):'—',chiTax.netRent>chiTax.netExpenses?'+$'+n2(chiTax.netRent-chiTax.netExpenses):'—')}
-        ${row('Rental Loss (negative gearing)',lumTax.netPropLoss>0?'-$'+n2(lumTax.netPropLoss):'—',chiTax.netPropLoss>0?'-$'+n2(chiTax.netPropLoss):'—','neg')}
-        ${row('Net Capital Gain (after 50% disc)','$'+n2(lumTax.myCGT),'$'+n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -$'+n2(cgt.totalLoss):'')}
+        ${row('Gross Salary',n2(lumTax.salary),n2(chiTax.salary))}
+        ${row('Dividend Income (cash)',n2(lumTax.myDiv),n2(chiTax.myDiv),'','from dividends tab')}
+        ${row('Franking Credits','+'+n2(lumTax.myFrank),'+'+n2(chiTax.myFrank),'pos')}
+        ${row('Net Rental Income',lumTax.netRent>lumTax.netExpenses?'+'+n2(lumTax.netRent-lumTax.netExpenses):'—',chiTax.netRent>chiTax.netExpenses?'+'+n2(chiTax.netRent-chiTax.netExpenses):'—')}
+        ${row('Rental Loss (negative gearing)',lumTax.netPropLoss>0?'-'+n2(lumTax.netPropLoss):'—',chiTax.netPropLoss>0?'-'+n2(chiTax.netPropLoss):'—','neg')}
+        ${row('Net Capital Gain (after 50% disc)',n2(lumTax.myCGT),n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -$'+n2(cgt.totalLoss):'')}
         <tr style="border-top:1px solid var(--border)">
           <td style="font-size:12px;font-weight:600;padding:6px 8px">Taxable Income</td>
-          <td style="font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;padding:6px 8px">$${n2(Math.max(0,lumTax.taxableIncome))}</td>
-          <td style="font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;padding:6px 8px">$${n2(Math.max(0,chiTax.taxableIncome))}</td>
+          <td style="font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;padding:6px 8px">
+            ${n2(Math.max(0,lumTax.taxableIncome))}
+            ${lumTax.sacrifice>0?`<div style='font-size:10px;color:var(--text3)'>(pre-sacrifice: ${n2(lumTax.salary)})</div>`:''}
+          </td>
+          <td style="font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;padding:6px 8px">
+            ${n2(Math.max(0,chiTax.taxableIncome))}
+            ${chiTax.sacrifice>0?`<div style='font-size:10px;color:var(--text3)'>(pre-sacrifice: ${n2(chiTax.salary)})</div>`:''}
+          </td>
         </tr>
-        ${row('Gross Tax Payable','$'+n2(lumTax.grossTax),'$'+n2(chiTax.grossTax))}
+        ${lumTax.sacrifice>0||chiTax.sacrifice>0?row('Salary Sacrifice',
+          lumTax.sacrifice>0?'-'+n2(lumTax.sacrifice):'—',
+          chiTax.sacrifice>0?'-'+n2(chiTax.sacrifice):'—','neg','reduces taxable income'):''}
+        ${row('Gross Tax Payable',n2(lumTax.grossTax),n2(chiTax.grossTax))}
+        ${lumTax.div293>0||chiTax.div293>0?row('Division 293 Tax',
+          lumTax.div293>0?n2(lumTax.div293):'—',
+          chiTax.div293>0?n2(chiTax.div293):'—','neg','extra 15% on super · income >$250k'):''}
       ${(lumTax.hecsRep>0||chiTax.hecsRep>0)?row('HECS-HELP Repayment',
-        lumTax.hecsRep>0?'$'+n2(lumTax.hecsRep):'—',
-        chiTax.hecsRep>0?'$'+n2(chiTax.hecsRep):'—'):''
+        lumTax.hecsRep>0?n2(lumTax.hecsRep):'—',
+        chiTax.hecsRep>0?n2(chiTax.hecsRep):'—'):''
       }
       ${(lumTax.mls>0||chiTax.mls>0)?row('Medicare Levy Surcharge',
-        lumTax.mls>0?'$'+n2(lumTax.mls)+'<span style="font-size:10px;color:var(--neg)"> (no priv. health)</span>':'—',
-        chiTax.mls>0?'$'+n2(chiTax.mls)+'<span style="font-size:10px;color:var(--neg)"> (no priv. health)</span>':'—'):''
+        lumTax.mls>0?n2(lumTax.mls)+'<span style="font-size:10px;color:var(--neg)"> (no priv. health)</span>':'—',
+        chiTax.mls>0?n2(chiTax.mls)+'<span style="font-size:10px;color:var(--neg)"> (no priv. health)</span>':'—'):''
       }
-        ${row('Less: Tax Withheld','-$'+n2(lumTax.withheld),'-$'+n2(chiTax.withheld),'neg')}
-        ${row('Less: PAYG Instalments',lumTax.payg?'-$'+n2(lumTax.payg):'—',chiTax.payg?'-$'+n2(chiTax.payg):'—','neg')}
-        ${row('Less: Franking Credits','-$'+n2(lumTax.myFrank),'-$'+n2(chiTax.myFrank),'neg')}
+        ${row('Less: Tax Withheld','-'+n2(lumTax.withheld),'-'+n2(chiTax.withheld),'neg')}
+        ${row('Less: PAYG Instalments',lumTax.payg?'-'+n2(lumTax.payg):'—',chiTax.payg?'-'+n2(chiTax.payg):'—','neg')}
+        ${row('Less: Franking Credits','-'+n2(lumTax.myFrank),'-'+n2(chiTax.myFrank),'neg')}
         <tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">
           <td style="font-size:13px;font-weight:700;padding:8px 8px">
             ${lumTax.refund>0||chiTax.refund>0?'Estimated Refund':'Estimated Tax Owing'}</td>
@@ -7677,6 +8202,5 @@ function taxPropUpdate(inp){
   // Don't re-render (user is typing — just save silently)
 }
 </script>
-
 </body>
 </html>
