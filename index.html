@@ -157,7 +157,7 @@
     </div>
     <div class="ovx">
       <table><thead><tr>
-        <th>Symbol</th><th>Type</th><th>Units</th><th>Avg Cost</th>
+        <th>Symbol</th><th>Owner</th><th>Type</th><th>Units</th><th>Avg Cost</th>
         <th>Cur Price</th><th>Mkt Value</th><th>Cost Basis</th><th>P&amp;L $</th><th>P&amp;L %</th><th>Source</th>
       </tr></thead><tbody id="hb"></tbody></table>
     </div>
@@ -748,21 +748,22 @@
       </div>
       <!-- Carry-forward CC inputs -->
       <div style="margin-top:16px;padding:12px;background:rgba(99,102,241,0.06);border-radius:8px;border:1px solid rgba(99,102,241,0.2)">
-        <div style="font-family:var(--mono);font-size:11px;color:#818cf8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">⟳ Carry-Forward Concessional Contributions</div>
-        <div style="font-size:11px;color:var(--text3);margin-bottom:10px">Enter total CC (employer + personal) actually used each year. Leave blank if same as cap ($30,000). Super balance must be &lt;$500k at 30 Jun of prior year.</div>
+        <div style="font-family:var(--mono);font-size:11px;color:#818cf8;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px">⟳ Carry-Forward — Unused Concessional Contributions</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:12px;line-height:1.5">Enter the <b style="color:var(--text2)">unused concessional contributions cap</b> for each year exactly as shown on your ATO online services (MyGov → Tax → Super → Carry-forward).<br>Leave blank = $0 carry-forward for that year.</div>
         <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px">
-          <div><label class="fl" style="font-size:10px">Super Balance (30 Jun FY2025)</label>
+          <div><label class="fl" style="font-size:10px">Super Balance at 30 Jun FY2025
+            <span style="color:var(--text3)">(must be &lt;$500k to be eligible)</span></label>
             <input class="fi su-contrib" data-contrib="bal_prevyr" type="number" placeholder="e.g. 180000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
-          <div><label class="fl" style="font-size:10px">FY2021 — Total CC used</label>
-            <input class="fi su-contrib" data-contrib="cc_fy2021" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
-          <div><label class="fl" style="font-size:10px">FY2022 — Total CC used</label>
-            <input class="fi su-contrib" data-contrib="cc_fy2022" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
-          <div><label class="fl" style="font-size:10px">FY2023 — Total CC used</label>
-            <input class="fi su-contrib" data-contrib="cc_fy2023" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
-          <div><label class="fl" style="font-size:10px">FY2024 — Total CC used</label>
-            <input class="fi su-contrib" data-contrib="cc_fy2024" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
-          <div><label class="fl" style="font-size:10px">FY2025 — Total CC used</label>
-            <input class="fi su-contrib" data-contrib="cc_fy2025" type="number" placeholder="e.g. 27500 (cap was $27.5k)" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2021 — Unused cap (from ATO)</label>
+            <input class="fi su-contrib" data-contrib="cf_unused_fy2021" type="number" placeholder="e.g. 5000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2022 — Unused cap (from ATO)</label>
+            <input class="fi su-contrib" data-contrib="cf_unused_fy2022" type="number" placeholder="e.g. 5000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2023 — Unused cap (from ATO)</label>
+            <input class="fi su-contrib" data-contrib="cf_unused_fy2023" type="number" placeholder="e.g. 5000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2024 — Unused cap (from ATO)</label>
+            <input class="fi su-contrib" data-contrib="cf_unused_fy2024" type="number" placeholder="e.g. 5000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
+          <div><label class="fl" style="font-size:10px">FY2025 — Unused cap (from ATO)</label>
+            <input class="fi su-contrib" data-contrib="cf_unused_fy2025" type="number" placeholder="e.g. 5000" step="any" min="0" style="padding:4px 8px" oninput="calcSuperPreview()"></div>
         </div>
       </div>
       <!-- FY history -->
@@ -1787,6 +1788,7 @@ function renderH(){
   const th=(col,label,sty)=>sortTh(TID,col,label,'renderH',sty);
   $('hb').closest('table').querySelector('thead tr').innerHTML =
     th('symbol','Symbol') +
+    '<th>Owner</th>' +
     th('assetType','Type') +
     th('units','Units','text-align:right') +
     th('_avg','Avg Cost','text-align:right') +
@@ -1801,7 +1803,7 @@ function renderH(){
     const cur=h._cur,mv=h._mv,pl=h._pl,pp=h._pp,avg=h._avg;
     const plC=pl==null?'':(pl>=0?'pos':'neg');
     return `<tr>
-      <td><b>${displaySymbol(h.symbol)}</b></td><td>${bT(h.assetType)}</td>
+      <td><b>${displaySymbol(h.symbol)}</b></td><td><span style="font-size:10px;padding:1px 6px;border-radius:10px;background:${getPersonColour(getSymbolOwner(h.symbol))}22;color:${getPersonColour(getSymbolOwner(h.symbol))}">${getPersonLabel(getSymbolOwner(h.symbol))}</span></td><td>${bT(h.assetType)}</td>
       <td style="text-align:right">${nN(h.units,8)}</td>
       <td style="text-align:right">${n2(avg,dec(avg))}</td>
       <td style="text-align:right">${cur!=null?n2(cur,dec(cur)):'<span style="color:var(--text3)">—</span>'}</td>
@@ -3290,6 +3292,7 @@ function renderHD(){
   const th=(c,label,sty)=>sortTh(TID,c,label,'renderHD',sty);
   $('hd-body').closest('table').querySelector('thead tr').innerHTML =
     th('symbol','Symbol') +
+    '<th>Owner</th>' +
     th('assetType','Type') +
     th('units','Units','text-align:right') +
     th('avg','Avg Cost','text-align:right') +
@@ -4514,7 +4517,24 @@ let syncStatus = 'idle'; // idle | syncing | ok | error | conflict
 let suCombinedColor = localStorage.getItem('su_combined_color') || '#ffffff';
 let suCardView = 0; // 0=combined, 1..n = account index
 
+function toggleSuperAccount(headerEl){
+  const id   = headerEl.dataset.id;
+  const body = document.getElementById('su-body-'+id);
+  const icon = document.getElementById('su-toggle-'+id);
+  if(!body) return;
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if(icon){
+    icon.textContent  = isOpen ? '›' : '⌄';
+    icon.style.color  = isOpen ? 'var(--text3)' : 'var(--blue)';
+    icon.style.transform = isOpen ? '' : 'rotate(0deg)';
+    icon.style.fontSize  = isOpen ? '18px' : '16px';
+  }
+  headerEl.style.borderColor = isOpen ? '' : 'var(--blue)';
+}
+
 function toggleSuperSection(headerEl){
+  // Individual section toggle (CONTRIBUTIONS / CARRY-FORWARD / INVESTMENT RETURN)
   const body   = headerEl.nextElementSibling;
   const icon   = headerEl.querySelector('span');
   if(!body || !icon) return;
@@ -4524,6 +4544,7 @@ function toggleSuperSection(headerEl){
   icon.textContent    = isOpen ? '+' : '−';
   icon.style.color    = isOpen ? 'var(--text3)' : 'var(--blue)';
 }
+
 
 function saveSuperAccounts(){ localStorage.setItem('pt_super', JSON.stringify(superAccounts)); }
 
@@ -4563,62 +4584,43 @@ function readSuperForm(){
 }
 
 function calcCarryForward(contrib, currentBalance){
-  // ATO Carry-forward concessional contributions (from FY2020 onwards)
-  // Only available if super balance < $500,000 at 30 Jun of prior year
+  // ATO Carry-forward concessional contributions
+  // User enters the UNUSED amount directly from ATO website (MyGov/ATO portal)
+  // Available for FY2021–FY2025 (5-year window for FY2026)
   const BALANCE_THRESHOLD = 500000;
   const eligible = !currentBalance || currentBalance < BALANCE_THRESHOLD;
 
-  // CC caps per financial year
-  const CC_CAPS = {
-    2021: 27500,  // FY2021 cap
-    2022: 27500,  // FY2022 cap
-    2023: 27500,  // FY2023 cap
-    2024: 27500,  // FY2024 cap
-    2025: 30000,  // FY2025 cap (increased)
-    2026: 30000,  // FY2026 current cap
-  };
-
-  // FY2026 carry-forward window: last 5 years (FY2021–FY2025)
-  const CUR_FY = 2026;
+  const CC_CAP_FY2026 = 30000;
   const windowYears = [2021, 2022, 2023, 2024, 2025];
+  const CC_CAPS = { 2021:27500, 2022:27500, 2023:27500, 2024:27500, 2025:30000 };
 
-  // Per-year unused amounts
+  // Per-year: user enters the unused amount directly from ATO
   const breakdown = windowYears.map(yr => {
-    const cap  = CC_CAPS[yr] || 27500;
-    const entered = contrib[`cc_fy${yr}`];
-    const used = entered != null ? +entered : cap;  // blank = assume cap fully used
-    const unused = Math.max(0, cap - used);
-    return { yr, cap, used, unused };
+    const cap    = CC_CAPS[yr] || 27500;
+    const entered = contrib[`cf_unused_fy${yr}`];  // direct ATO value
+    const unused  = entered != null ? Math.min(+entered, cap) : 0; // blank = 0 (no carry-forward)
+    return { yr, cap, unused };
   });
 
   const totalUnused = breakdown.reduce((s, r) => s + r.unused, 0);
 
-  // Current year amounts
+  // Current year actual CC (employer + personal) for "how much cf used"
   const curEmp = +(contrib.empCC_cur || 0);
   const curPer = +(contrib.perCC_cur || 0);
   const curCC  = curEmp + curPer;
-  const curCap = CC_CAPS[CUR_FY] || 30000;
 
-  // How much carry-forward has been used this year
-  // (current CC above the base cap)
-  const cfUsedThisYear = Math.max(0, curCC - curCap);
+  const cfUsedThisYear     = Math.max(0, curCC - CC_CAP_FY2026);
   const cfRemainingThisYear = eligible ? Math.max(0, totalUnused - cfUsedThisYear) : 0;
-
-  // Total CC cap available this year (base + carry-forward)
-  const totalCapThisYear = eligible ? curCap + totalUnused : curCap;
+  const totalCapThisYear   = eligible ? CC_CAP_FY2026 + totalUnused : CC_CAP_FY2026;
 
   return {
-    eligible,
-    currentBalance: currentBalance || 0,
-    breakdown,
-    totalUnused,
-    curCC,
-    curCap,
-    cfUsedThisYear,
-    cfRemainingThisYear,
-    totalCapThisYear,
+    eligible, currentBalance: currentBalance || 0,
+    breakdown, totalUnused, curCC,
+    curCap: CC_CAP_FY2026,
+    cfUsedThisYear, cfRemainingThisYear, totalCapThisYear,
   };
 }
+
 
 
 function calcSuperPreview(){
@@ -4922,17 +4924,13 @@ function renderSuperAccounts(){
     // ── CARRY-FORWARD panel ───────────────────────────────────────
     const cf = calcCarryForward(a.contrib||{}, a.contrib?.bal_prevyr || a.balance);
     const cfRows = cf.breakdown.map(r => {
-      const pct = r.cap > 0 ? Math.round(r.used/r.cap*100) : 0;
       return `
-        <div style="display:grid;grid-template-columns:60px 1fr auto;gap:6px;align-items:center">
+        <div style="display:flex;justify-content:space-between;align-items:center;
+          padding:4px 8px;border-radius:4px;background:${r.unused>0?'rgba(129,140,248,0.06)':'transparent'}">
           <span style="font-family:var(--mono);font-size:11px;color:var(--text3)">FY${r.yr}</span>
-          <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden">
-            <div style="height:100%;width:${Math.min(100,pct)}%;background:${pct>=100?'var(--neg)':'var(--pos)'};border-radius:3px"></div>
-          </div>
-          <span style="font-family:var(--mono);font-size:11px;text-align:right;min-width:100px">
-            ${r.unused > 0
-              ? `<span style='color:#818cf8'>${n2(r.unused)} unused</span>`
-              : `<span style='color:var(--text3)'>fully used</span>`}
+          <span style="font-family:var(--mono);font-size:12px;font-weight:600;
+            color:${r.unused>0?'#818cf8':'var(--text3)'}">
+            ${r.unused > 0 ? n2(r.unused) : '—'}
           </span>
         </div>`;
     }).join('');
@@ -5022,17 +5020,22 @@ function renderSuperAccounts(){
 
     const roiPanel = collapsible('INVESTMENT RETURN (MODIFIED DIETZ)', roiBody);
 
-    return `<div class="fs" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
+    return `<div class="fs" style="margin-bottom:10px">
+      <!-- Clickable header bar -->
+      <div onclick="toggleSuperAccount(this)" data-id="${a.id}" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:12px 14px;background:var(--surface);border:1px solid var(--border);border-radius:8px;cursor:pointer;user-select:none;transition:border-color 0.15s">
+        <div style="display:flex;align-items:center;gap:10px">
           <div style="width:12px;height:12px;border-radius:50%;background:${color};flex-shrink:0"></div>
           <div style="font-family:var(--mono);font-size:14px;font-weight:600">${escHtml(a.name)}</div>
+          <div style="font-family:var(--mono);font-size:12px;color:var(--text3)">${n2(curBal)}</div>
         </div>
-        <div style="display:flex;gap:8px">
-          <button class="btn" onclick="editSuperAccount(this)" data-id="${a.id}">\u270F EDIT</button>
-          <button class="btn btn-r" onclick="deleteSuperAccount(this)" data-id="${a.id}">\u2715 DELETE</button>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="btn" onclick="event.stopPropagation();editSuperAccount(this)" data-id="${a.id}">\u270F EDIT</button>
+          <button class="btn btn-r" onclick="event.stopPropagation();deleteSuperAccount(this)" data-id="${a.id}">\u2715 DELETE</button>
+          <span id="su-toggle-${a.id}" style="font-size:18px;color:var(--text3);line-height:1;margin-left:4px">›</span>
         </div>
       </div>
+      <!-- Collapsible body - starts minimised -->
+      <div id="su-body-${a.id}" style="display:none;padding:14px 0 4px">
       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">
         ${stat('Current Balance', n2(curBal))}
         ${prevBal  !== null ? stat('FY'+PREV_FY+' Balance',  n2(prevBal))  : ''}
@@ -5043,7 +5046,7 @@ function renderSuperAccounts(){
       ${contribPanel}
       ${cfPanel}
       ${roiPanel}
-    </div>`;
+    </div></div>`;
   }).join('');
 }
 
