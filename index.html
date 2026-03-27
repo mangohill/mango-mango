@@ -5425,6 +5425,8 @@ function applyRemoteData(remote){
   renderProperties(); renderAnalytics();
   try { renderSuperAccounts(); renderSuperCards(); renderSuperChart(); } catch(e){}
   try { renderSpending(); } catch(e){}
+  try { renderTax(); } catch(e){}
+  try { renderOwnershipGrid(); } catch(e){}
 }
 
 function syncResolve(choice){
@@ -6761,6 +6763,11 @@ function backupImport(input){
 
 function backupConfirm(){
   if(!_pendingRestore) return;
+  // Version compatibility check
+  const bv = _pendingRestore.version || 1;
+  if(bv > BACKUP_VERSION + 1){
+    if(!confirm(`This backup was made with a newer version (v${bv}). Some data may not restore correctly. Continue?`)) return;
+  }
   // Validate backup structure before applying
   if(!_pendingRestore.data || typeof _pendingRestore.data !== 'object'){
     notify('Invalid backup structure.','err'); return;
@@ -6804,6 +6811,8 @@ function backupConfirm(){
   renderProperties(); renderAnalytics();
   try { renderSuperAccounts(); renderSuperCards(); renderSuperChart(); } catch(e){}
   try { renderSpending(); } catch(e){}
+  try { renderTax(); } catch(e){}
+  try { renderOwnershipGrid(); } catch(e){}
 
   backupStatus('✓ Restore complete — ' + trades.length + ' trades, ' + dividends.length + ' dividends, ' + properties.length + ' properties.', 'var(--green)');
   notify('Backup restored ✓');
