@@ -8032,7 +8032,17 @@ function renderTax(){
           <div><label class="fl">Tax Withheld (PAYG)</label>
             <input type="number" class="fi" style="padding:4px 8px"
               placeholder="e.g. 22000" value="${pRec.withheld||''}"
-              oninput="taxInpSave('${person}','withheld',+this.value,${fy})" onblur="renderTax()"></div>
+              oninput="taxInpSave('${person}','withheld',+this.value,${fy})" onblur="renderTax()">
+            ${(()=>{
+              const s = +pRec.salary||0;
+              const w = +pRec.withheld||0;
+              if(!s||!w) return '';
+              const pct = (w/s*100).toFixed(1);
+              const clr = w/s > 0.35 ? 'var(--neg)' : w/s > 0.25 ? 'var(--gold)' : 'var(--pos)';
+              return `<div style="margin-top:4px;font-size:11px;font-family:var(--mono);color:${clr}">`
+                + `${pct}% of gross salary</div>`;
+            })()}
+            </div>
           <div><label class="fl">PAYG Instalments</label>
             <input type="number" class="fi" style="padding:4px 8px"
               placeholder="e.g. 0" value="${pRec.payg||''}"
@@ -8151,6 +8161,16 @@ function renderTax(){
           lumTax.sacrifice>0?'-'+n2(lumTax.sacrifice):'—',
           chiTax.sacrifice>0?'-'+n2(chiTax.sacrifice):'—','neg','reduces taxable income'):''}
         ${row('Gross Tax Payable',n2(lumTax.grossTax),n2(chiTax.grossTax))}
+        ${row('Effective Tax Rate',
+          lumTax.taxableIncome>0 ? (lumTax.grossTax/lumTax.taxableIncome*100).toFixed(1)+'%' : '—',
+          chiTax.taxableIncome>0 ? (chiTax.grossTax/chiTax.taxableIncome*100).toFixed(1)+'%' : '—',
+          '','% of taxable income'
+        )}
+        ${row('PAYG Withholding Rate',
+          lumTax.salary>0 ? (lumTax.withheld/lumTax.salary*100).toFixed(1)+'%' : '—',
+          chiTax.salary>0 ? (chiTax.withheld/chiTax.salary*100).toFixed(1)+'%' : '—',
+          '','% of gross salary withheld by employer'
+        )}
         ${lumTax.div293>0||chiTax.div293>0?row('Division 293 Tax',
           lumTax.div293>0?n2(lumTax.div293):'—',
           chiTax.div293>0?n2(chiTax.div293):'—','neg','extra 15% on super · income >$250k'):''}
