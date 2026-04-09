@@ -1025,7 +1025,8 @@
           onkeydown="if(event.key==='Enter')setManualPrice();">
       </div>
       <button class="btn btn-g" onclick="setManualPrice()" style="align-self:flex-end">SET PRICE</button>
-      <button class="btn" onclick="fetchAndSetMAIF()" title="Fetch latest MAIF buy price from monashinvestors.com" style="align-self:flex-end;background:var(--gold);color:#000;font-weight:700">⟳ MAIF</button>
+      <button class="btn" onclick="fetchAndSetMAIF()" title="Fetch latest MAIF buy price from Monash" style="align-self:flex-end;background:var(--gold);color:#000;font-weight:700">⟳ MAIF</button>
+      
     </div>
     <textarea class="fi" id="mp-bulk" rows="5" placeholder="DHHF 39.50&#10;NDQ 45.20&#10;WQG 1.62&#10;MAAT 1.08" style="width:100%;resize:vertical;margin-bottom:10px"></textarea>
     <button class="btn btn-g" onclick="bulkSetPrices()">SET ALL PRICES</button>
@@ -2528,11 +2529,62 @@ async function fetchMAIFPrice(){
   if(!workerURL){ notify('Set your Cloudflare Worker URL in Settings first.','err'); return null; }
   try{
     const r = await fetch(`${workerURL}?maif=1`);
-    if(!r.ok) return null;
+    if(!r.ok){
+      console.warn('MAIF fetch: HTTP', r.status, r.statusText);
+      notify('MAIF fetch failed: HTTP '+r.status+' — check worker is deployed correctly.','err');
+      return null;
+    }
     const d = await r.json();
-    if(d.error){ console.warn('MAIF fetch error:', d.error); return null; }
-    return d.MAIF ? +d.MAIF : null;
-  }catch(e){ console.warn('MAIF fetch error:', e); return null; }
+    if(d.error){
+      console.warn('MAIF worker error:', d.error);
+      notify('MAIF worker error: '+d.error,'err');
+      return null;
+    }
+    if(!d.MAIF){
+      console.warn('MAIF: no price in response:', JSON.stringify(d));
+      notify('MAIF: worker responded but no price found — Monash file URL may have changed.','err');
+      return null;
+    }
+    return +d.MAIF;
+  }catch(e){
+    console.warn('MAIF fetch error:', e);
+    notify('MAIF fetch failed: '+e.message,'err');
+    return null;
+  }
+}
+
+async function testMAIFDebug(){
+  const workerURL = getWorkerURL();
+  if(!workerURL){ notify('Set your Cloudflare Worker URL first.','err'); return; }
+  notify('Running MAIF debug fetch…','info');
+  try{
+    const r = await fetch(`${workerURL}?maif=1&debug=1`);
+    const text = await r.text();
+    console.log('MAIF debug response (raw):', text);
+    try{
+      const d = JSON.parse(text);
+      console.log('MAIF debug parsed:', d);
+      if(d.rows){ console.log('First rows from xlsx:', d.rows); }
+      if(d.lastBuy){ console.log('Buy price found:', d.lastBuy); }
+      if(d.error){ notify('MAIF debug error: '+d.error,'err'); return; }
+      notify('MAIF debug: check browser console (F12) for xlsx row data','ok');
+    } catch(e){
+      notify('MAIF debug response was not JSON — check console (F12)','err');
+    }
+  } catch(e){
+    notify('MAIF debug failed: '+e.message,'err');
+  }
+}
+
+
+function setMAIFManually(){
+  const raw = prompt('Enter the MAIF unit price from monashinvestors.com\n(e.g. 1.6948):');
+  if(!raw) return;
+  const p = parseFloat(raw.replace(/[^0-9.]/g,''));
+  if(!p || p <= 0){ notify('Invalid price entered.','err'); return; }
+  prices['MAIF'] = p;
+  save(); renderH(); renderPrices();
+  notify('✓ MAIF price set to $'+p.toFixed(4),'ok');
 }
 
 async function fetchAndSetMAIF(){
@@ -2588,15 +2640,13 @@ async function refreshPrices(){
           prices[sym]=p; stockFetched++;
         }
       }
-      // Fetch MAIF buy price from Monash website xlsx
-      // Check ALL holdings (any assetType) for MAIF symbol
+      // MAIF: auto-fetch unavailable — Monash removed the public price file.
+      // If MAIF is in holdings and has no stored price, warn the user.
       const hasMAIF = h.some(x => priceSymbol(x.symbol) === 'MAIF');
       if(hasMAIF){
-        console.log('Fetching MAIF price from Monash...');
         const maifPrice = await fetchMAIFPrice();
-        console.log('MAIF price result:', maifPrice);
         if(maifPrice){ prices['MAIF']=maifPrice; stockFetched++; }
-        else notify('Could not fetch MAIF price — check Worker is deployed with new code.','err');
+        else notify('MAIF fetch failed — check Worker is deployed with latest code.','err');
       }
       if(stockFetched===0){
         notify('Worker reachable but no prices returned — check console for details.','err');
@@ -7268,97 +7318,30 @@ const WORKER_CODE = [
   '    const url = new URL(request.url);',
   '    const CORS = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };',
   '',
-  '    // ── MAIF unit price ──────────────────────────────────────────',
+  '    // ── MAIF unit price via Monash Ninja Tables public API ───────',
   '    if (url.searchParams.get("maif") === "1") {',
   '      try {',
-  '        const now = new Date();',
-  '        let price = null;',
-  '        for (let offset = 0; offset <= 2 && !price; offset++) {',
-  '          const d = new Date(now.getFullYear(), now.getMonth() - offset, 1);',
-  '          const yyyy = d.getFullYear();',
-  '          const mm   = String(d.getMonth() + 1).padStart(2, "0");',
-  '          const xlsxUrl = `https://monashinvestors.com/wp-content/uploads/${yyyy}/${mm}/Daily-Buy-Sell.xlsx`;',
-  '          const res = await fetch(xlsxUrl, { headers: { "User-Agent": "Mozilla/5.0" } });',
-  '          if (!res.ok) continue;',
-  '          const buf  = await res.arrayBuffer();',
-  '          const decoder = new TextDecoder("utf-8");',
-  '          const entries = await unzipXlsx(buf);',
-  '',
-  '          // Build shared strings table (xlsx stores text as indices into this)',
-  '          const ssXml = entries["xl/sharedStrings.xml"]',
-  '                     || entries["xl/SharedStrings.xml"]',
-  '                     || entries["xl/sharedstrings.xml"];',
-  '          const sharedStrings = [];',
-  '          if (ssXml) {',
-  '            const ssText = decoder.decode(ssXml);',
-  '            const siParts = ssText.split("<si>");',
-  '            for (let i = 1; i < siParts.length; i++) {',
-  '              const tS = siParts[i].indexOf("<t");',
-  '              const tE = siParts[i].indexOf("</t>");',
-  '              if (tS >= 0 && tE > tS) {',
-  '                const inner = siParts[i].slice(tS);',
-  '                const gt = inner.indexOf(">");',
-  '                sharedStrings.push(gt >= 0 ? inner.slice(gt + 1, inner.indexOf("</t>")) : "");',
-  '              } else {',
-  '                sharedStrings.push("");',
-  '              }',
-  '            }',
-  '          }',
-  '',
-  '          const sheetXml = entries["xl/worksheets/sheet1.xml"];',
-  '          if (!sheetXml) continue;',
-  '          const xml = decoder.decode(sheetXml);',
-  '',
-  '          // Parse each cell — type="s" means value is a shared string index',
-  '          // type omitted or type="n" means value is a raw number',
-  '          const debug = url.searchParams.get("debug") === "1";',
-  '          const allRows = [];',
-  '          let lastBuy = null;',
-  '',
-  '          const rowParts = xml.split("<row");',
-  '          for (let ri = 1; ri < rowParts.length; ri++) {',
-  '            const rowXml = rowParts[ri].split("</row>")[0];',
-  '            const cells = {};',
-  '            const cParts = rowXml.split("<c ");',
-  '            for (let ci = 1; ci < cParts.length; ci++) {',
-  '              const cStr = cParts[ci];',
-  '              // Extract column letter(s) from r="B4" style attribute',
-  '              const rIdx = cStr.indexOf("r=");',
-  '              if (rIdx < 0) continue;',
-  '              const colRaw = cStr.slice(rIdx + 2).replace(/["\']/g, "");',
-  '              let col = "";',
-  '              for (let k = 0; k < colRaw.length; k++) {',
-  '                const ch = colRaw.charCodeAt(k);',
-  '                if (ch >= 65 && ch <= 90) col += colRaw[k]; else break;',
-  '              }',
-  '              if (!col) continue;',
-  '              // Check if this cell is a shared string (t="s")',
-  '              const isShared = cStr.indexOf("t=\\"s\\"") >= 0 || cStr.indexOf("t=\'s\'") >= 0;',
-  '              const vS = cStr.indexOf("<v>");',
-  '              const vE = cStr.indexOf("</v>");',
-  '              if (vS < 0 || vE < 0) continue;',
-  '              const raw = cStr.slice(vS + 3, vE);',
-  '              if (isShared) {',
-  '                const idx = parseInt(raw, 10);',
-  '                cells[col] = sharedStrings[idx] !== undefined ? sharedStrings[idx] : raw;',
-  '              } else {',
-  '                cells[col] = parseFloat(raw);',
-  '              }',
-  '            }',
-  '            if (debug && allRows.length < 10) allRows.push(JSON.stringify(cells));',
-  '            // Monash xlsx has labels swapped: the "Sell" row contains the buy/entry price',
-  '            if (typeof cells["A"] === "string" && cells["A"].trim().toLowerCase() === "sell"',
-  '                && typeof cells["B"] === "number" && cells["B"] > 0) {',
-  '              lastBuy = cells["B"];',
-  '            }',
-  '          }',
-  '          if (debug) {',
-  '            return new Response(JSON.stringify({ rows: allRows, lastBuy, ssCount: sharedStrings.length }), { headers: CORS });',
-  '          }',
-  '          if (lastBuy) price = lastBuy;',
+  '        const apiUrl = "https://monashinvestors.com/wp-admin/admin-ajax.php"',
+  '          + "?action=wp_ajax_ninja_tables_public_action"',
+  '          + "&table_id=11330"',
+  '          + "&target_action=get-all-data"',
+  '          + "&default_sorting=old_first"',
+  '          + "&skip_rows=0&limit_rows=0"',
+  '          + "&ninja_table_public_nonce=cec8148613";',
+  '        const res = await fetch(apiUrl, {',
+  '          headers: { "User-Agent": "Mozilla/5.0", "Referer": "https://monashinvestors.com/" }',
+  '        });',
+  '        if (!res.ok) return new Response(JSON.stringify({ error: "HTTP " + res.status }), { headers: CORS });',
+  '        const rows = await res.json();',
+  '        // rows is an array like: [{value:{field:"Buy",value:"1.5927"}}, ...]',
+  '        let buyPrice = null;',
+  '        for (const row of rows) {',
+  '          const field = (row.value && row.value.field) ? row.value.field.trim().toLowerCase() : "";',
+  '          const val   = (row.value && row.value.value) ? parseFloat(row.value.value) : null;',
+  '          if (field === "buy" && val > 0) { buyPrice = val; break; }',
   '        }',
-  '        if (price) return new Response(JSON.stringify({ MAIF: price }), { headers: CORS });',
-  '        return new Response(JSON.stringify({ error: "price not found" }), { headers: CORS });',
+  '        if (buyPrice) return new Response(JSON.stringify({ MAIF: buyPrice }), { headers: CORS });',
+  '        return new Response(JSON.stringify({ error: "buy price not found", rows }), { headers: CORS });',
   '      } catch(e) {',
   '        return new Response(JSON.stringify({ error: e.message }), { headers: CORS });',
   '      }',
@@ -7367,64 +7350,22 @@ const WORKER_CODE = [
   '    // ── ASX / Yahoo Finance prices ────────────────────────────────',
   '    const symbols = url.searchParams.get("symbols") || "";',
   '    if (!symbols) return new Response("{}", { headers: CORS });',
-  '    const syms = symbols.split(",");',
+  '    const symList = symbols.split(",").map(s => s.trim()).filter(Boolean);',
   '    const results = {};',
-  '    await Promise.all(syms.map(async (sym) => {',
+  '    await Promise.all(symList.map(async sym => {',
   '      try {',
-  '        const r = await fetch(',
-  '          "https://query1.finance.yahoo.com/v8/finance/chart/" + sym + "?interval=1d&range=1d",',
-  '          { headers: { "User-Agent": "Mozilla/5.0" } }',
-  '        );',
+  '        const yUrl = "https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(sym)',
+  '          + "?interval=1d&range=1d";',
+  '        const r = await fetch(yUrl, { headers: { "User-Agent": "Mozilla/5.0" } });',
+  '        if (!r.ok) return;',
   '        const d = await r.json();',
-  '        const price = d && d.chart && d.chart.result && d.chart.result[0]',
-  '                    && d.chart.result[0].meta && d.chart.result[0].meta.regularMarketPrice;',
+  '        const price = d?.chart?.result?.[0]?.meta?.regularMarketPrice;',
   '        if (price) results[sym] = price;',
   '      } catch(e) {}',
   '    }));',
   '    return new Response(JSON.stringify(results), { headers: CORS });',
-  '',
   '  }',
-  '};',
-  '',
-  '// ── XLSX unzip helper (Workers runtime has DecompressionStream) ───',
-  'async function unzipXlsx(buffer) {',
-  '  // Cloudflare Workers support the non-streaming ZIP parser approach.',
-  '  // Walk the ZIP central directory to find and decompress each entry.',
-  '  const view = new DataView(buffer);',
-  '  const bytes = new Uint8Array(buffer);',
-  '  const entries = {};',
-  '  let offset = 0;',
-  '  while (offset < bytes.length - 4) {',
-  '    const sig = view.getUint32(offset, true);',
-  '    if (sig !== 0x04034b50) { offset++; continue; }',
-  '    const flags      = view.getUint16(offset + 6, true);',
-  '    const compression= view.getUint16(offset + 8, true);',
-  '    const compSize   = view.getUint32(offset + 18, true);',
-  '    const nameLen    = view.getUint16(offset + 26, true);',
-  '    const extraLen   = view.getUint16(offset + 28, true);',
-  '    const name       = new TextDecoder().decode(bytes.slice(offset+30, offset+30+nameLen));',
-  '    const dataStart  = offset + 30 + nameLen + extraLen;',
-  '    const compData   = bytes.slice(dataStart, dataStart + compSize);',
-  '    if (compression === 8) {',
-  '      try {',
-  '        const ds = new DecompressionStream("deflate-raw");',
-  '        const writer = ds.writable.getWriter();',
-  '        const reader = ds.readable.getReader();',
-  '        writer.write(compData); writer.close();',
-  '        const chunks = []; let done = false;',
-  '        while (!done) { const r = await reader.read(); done = r.done; if (r.value) chunks.push(r.value); }',
-  '        const total = chunks.reduce((s,c)=>s+c.length,0);',
-  '        const out = new Uint8Array(total); let pos = 0;',
-  '        chunks.forEach(c=>{ out.set(c,pos); pos+=c.length; });',
-  '        entries[name] = out;',
-  '      } catch(e) {}',
-  '    } else if (compression === 0) {',
-  '      entries[name] = compData;',
-  '    }',
-  '    offset = dataStart + compSize;',
-  '  }',
-  '  return entries;',
-  '}'
+  '};'
 ].join('\n');
 
 // ── INIT ─────────────────────────────────────────────────────────────
@@ -7435,7 +7376,7 @@ refreshAllBrokerSelects();
 renderH(); renderT(); renderR();
 const wcBox = $('worker-code-box');
 setTimeout(syncAutoLoad, 800); // auto-pull on page open if configured
-if(wcBox) wcBox.value = WORKER_CODE;
+if(wcBox) wcBox.value = Array.isArray(WORKER_CODE) ? WORKER_CODE.join('\n') : WORKER_CODE;
 
 // ── Pure-JS PDF extractor (no CDN, replaces PDF.js) ─────────────────────
 async function extractPDFText(file){
@@ -7840,8 +7781,10 @@ function renderTax(){
 
   // For each sell: find cost basis (match buys chronologically)
   function calcCGT(personSells){
+    // personSells: each entry has a ._share property (1.0 = fully owned, 0.5 = joint)
     let shortGain=0, longGain=0, totalLoss=0;
     personSells.forEach(sell=>{
+      const share = sell._share !== undefined ? sell._share : 1.0;
       // Find all buys of this symbol before sell date, sorted oldest first
       const buys = trades
         .filter(t=>(t.type==='buy'||t.type==='drp')&&t.symbol===sell.symbol&&t.date<sell.date)
@@ -7864,7 +7807,7 @@ function renderTax(){
         if(diff >= 365) heldOver12m = true;
       }
       const proceeds = +sell.units * +sell.price - (+sell.fees||0);
-      const gain = proceeds - costBasis;
+      const gain = (proceeds - costBasis) * share;
       if(gain >= 0){
         // Apply 50% CGT discount if held >12 months
         const discounted = heldOver12m ? gain * 0.5 : gain;
@@ -7878,8 +7821,28 @@ function renderTax(){
              netGain: Math.max(0, shortGain + longGain - totalLoss) };
   }
 
-  // All sells (no person split for shares/crypto — taxed by owner)
-  const cgt = calcCGT(sells);
+  // CGT attributed by stock ownership — each person only pays CGT on THEIR sells
+  function personCGT(personKey) {
+    const personSells = sells
+      .filter(s => {
+        const own = getSymbolOwner(s.symbol);
+        return own === personKey || own === 'joint';
+      })
+      .map(s => ({
+        ...s,
+        _share: getSymbolOwner(s.symbol) === 'joint' ? 0.5 : 1.0
+      }));
+    return calcCGT(personSells);
+  }
+  // Shared CGT summary (for display totals) — sum of both persons' attributed gains
+  const lumCGT = personCGT('lumia');
+  const chiCGT = personCGT('chilli');
+  const cgt = {
+    netGain:    lumCGT.netGain + chiCGT.netGain,
+    totalLoss:  lumCGT.totalLoss + chiCGT.totalLoss,
+    shortGain:  lumCGT.shortGain + chiCGT.shortGain,
+    longGain:   lumCGT.longGain + chiCGT.longGain,
+  };
 
   // ── Dividends in FY — attributed by stock ownership ────────────
   const fyDivs = dividends.filter(d=>inFY(d.date)&&d.type!=='drp');
@@ -7901,9 +7864,11 @@ function renderTax(){
   function propPnL(owner){
     let netRent=0, netExpenses=0;
     properties.forEach(p=>{
-      const pOwner = p.owner || 'lumia';  // default old properties to lumia
+      const pOwner = p.owner || 'joint';  // default to joint if unset
       const isOwner = pOwner===owner || pOwner==='joint';
       if(!isOwner) return;
+      // PPOR cannot claim rental income or deductions for tax purposes
+      if(p.propType === 'ppor') return;
       const share = pOwner==='joint' ? 0.5 : 1;
       const m = propMetrics(p);
       const annualRent = (p.weeklyRent||0)*52*share;
@@ -7930,7 +7895,7 @@ function renderTax(){
     const sacrifice   = +p.sacrifice   || 0;  // pre-tax salary sacrifice to super
     const hasPrivH    = !!(p.privateHealth || rec.privateHealthFamily);
     const { netPropLoss, netPropGain, netRent, netExpenses } = propPnLResult;
-    const myCGT    = cgtResult.netGain / 2;
+    const myCGT    = cgtResult.netGain;  // already attributed to this person only
     // Dividends attributed by actual stock ownership (not 50/50)
     const _myDivs  = fyDivs.filter(d=>{
       const own = getSymbolOwner(d.symbol);
@@ -7965,7 +7930,10 @@ function renderTax(){
     const otherSacr    = +rec[otherKey]?.sacrifice||0;
     const _otherDivs   = personDivs(otherKey);
     const otherDiv     = _otherDivs.reduce((s,d)=>s+(+d.amount||0)*personDivShare(d,otherKey),0);
-    const otherTI      = (otherSalary - otherSacr) + otherDiv;
+    // ATO: family income for MLS includes net rental of both persons
+    const otherPropResult = propPnL(otherKey);
+    const otherRental  = otherPropResult.netPropGain - otherPropResult.netPropLoss;
+    const otherTI      = (otherSalary - otherSacr) + otherDiv + otherRental;
     const familyIncome = taxableIncome + otherTI;
     const deps         = +(rec.dependants||0);
     const mls          = calcMLS(taxableIncome, familyIncome, hasPrivH, deps);
@@ -7982,8 +7950,8 @@ function renderTax(){
   const lumProp   = propPnL('lumia');
   const chiProp   = propPnL('chilli');
 
-  const lumTax    = personTax('lumia',  lumProp,  cgt);
-  const chiTax    = personTax('chilli', chiProp,  cgt);
+  const lumTax    = personTax('lumia',  lumProp,  lumCGT);
+  const chiTax    = personTax('chilli', chiProp,  chiCGT);
 
   // ── Property expense inputs per property ─────────────────────
   const propInputs = properties.length ? properties.map(p=>{
@@ -7996,10 +7964,26 @@ function renderTax(){
          data-propid="${p.id}" data-field="${field}" data-fy="${fy}"
          placeholder="${placeholder}" value="${pRec[field]||''}"
          oninput="taxPropUpdate(this)" onblur="renderTax()"></div>`;
+    // Compute live rental summary for this property for diagnostic display
+    const _m = propMetrics(p);
+    const _annRent = (p.weeklyRent||0)*52*share;
+    const _annInt  = _m.monthlyInterest*12*share;
+    const _nonInt  = share*((+pRec.rates||0)+(+pRec.insurance||0)+(+pRec.repairs||0)+(+pRec.agent||0)+(+pRec.other||0)+(+pRec.depr_bldg||0)+(+pRec.depr_pe||0));
+    const _totalExp = _nonInt + _annInt;
+    const _netResult = _annRent - _totalExp;
+    const _resultStr = _netResult >= 0 ? '+'+n2(_netResult) : '-'+n2(Math.abs(_netResult));
+    const _resultColour = _netResult >= 0 ? 'var(--pos)' : 'var(--neg)';
+    const _isPPOR = p.propType === 'ppor';
     return `<div class="fs" style="margin-bottom:12px">
       <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;flex-wrap:wrap">
         <div style="font-family:var(--mono);font-size:13px;font-weight:600">${escHtml(p.name)}</div>
         <span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(59,130,246,0.15);color:#60a5fa">${ownerLabel}${p.owner==='joint'?' — each 50%':''}</span>
+        ${_isPPOR
+          ? `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(239,68,68,0.15);color:var(--neg)">PPOR — excluded from rental tax calc</span>`
+          : `<span style="font-size:10px;padding:2px 7px;border-radius:10px;background:rgba(0,0,0,0.2);font-family:var(--mono);color:${_resultColour}">
+             Rent ${n2(_annRent)} · Expenses ${n2(_totalExp)} · Net <b>${_resultStr}</b> per owner
+           </span>`
+        }
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px">
         ${fi('rates','Council Rates','$')}
