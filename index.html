@@ -662,7 +662,9 @@
         <div id="pf-splits-wrap" style="display:flex;flex-direction:column;gap:8px"></div>
       </div>
       <div class="fgi"><label class="fl">Weekly Rent Income (AUD)</label><input class="fi" type="number" id="pf-rent" placeholder="0 if PPOR" step="any" min="0" oninput="calcPropPreview()"></div>
-      <div class="fgi"><label class="fl">Annual Property Expenses (AUD)</label><input class="fi" type="number" id="pf-expenses" placeholder="rates, insurance, mgmt…" step="any" min="0"></div>
+      <div class="fgi"><label class="fl">Annual Property Expenses (AUD)
+        <span style="font-size:10px;color:var(--text3)"> — auto-filled from Tax tab</span>
+      </label><input class="fi" type="number" id="pf-expenses" placeholder="rates, insurance, mgmt…" step="any" min="0"></div>
       <div class="fgi"><label class="fl">Property Manager?</label>
         <select class="fi" id="pf-mgr"><option value="no">Self-managed</option><option value="yes">Property Manager</option></select>
       </div>
@@ -5576,6 +5578,12 @@ function renderSplitRows(splits){
           <input class="fi sp-repay" type="number" value="${sp.repay||''}" placeholder="Auto" step="any" min="0" style="padding:3px 7px" oninput="calcPropPreview()"></div>
         <div><label class="fl" style="font-size:10px">Offset Balance</label>
           <input class="fi sp-offset" type="number" value="${sp.offset||''}" placeholder="0" step="any" min="0" style="padding:3px 7px" oninput="calcPropPreview()"></div>
+        <div><label class="fl" style="font-size:10px">Loan Purpose <span style="font-size:9px;color:var(--text3)">(tax)</span></label>
+          <select class="fi sp-purpose" style="padding:3px 7px" oninput="calcPropPreview()">
+            <option value="rental"     ${(!sp.purpose||sp.purpose==='rental')    ?'selected':''}>🏠 Rental</option>
+            <option value="investment" ${sp.purpose==='investment'?'selected':''}>📈 Investment</option>
+            <option value="personal"   ${sp.purpose==='personal'  ?'selected':''}>👤 Personal</option>
+          </select></div>
       </div>
     </div>`).join('');
 }
@@ -5609,6 +5617,12 @@ function addLoanSplit(){
           <input class="fi sp-repay" type="number" placeholder="Auto" step="any" min="0" style="padding:3px 7px" oninput="calcPropPreview()"></div>
         <div><label class="fl" style="font-size:10px">Offset Balance</label>
           <input class="fi sp-offset" type="number" placeholder="0" step="any" min="0" style="padding:3px 7px" oninput="calcPropPreview()"></div>
+        <div><label class="fl" style="font-size:10px">Loan Purpose <span style="font-size:9px;color:var(--text3)">(tax)</span></label>
+          <select class="fi sp-purpose" style="padding:3px 7px" oninput="calcPropPreview()">
+            <option value="rental">🏠 Rental</option>
+            <option value="investment">📈 Investment</option>
+            <option value="personal">👤 Personal</option>
+          </select></div>
       </div>
     </div>`;
   wrap.appendChild(div.firstElementChild);
@@ -5636,12 +5650,14 @@ function propMetrics(p){
   const loanInit = splits.reduce((s,sp)=>s+(+sp.initial||0),0);
 
   let monthlyInterest=0, interestSaved=0, annualInterest=0, repay=0;
+  let investmentAnnualInterest = 0, personalAnnualInterest = 0;
   splits.forEach(sp=>{
     const bal  = +sp.balance||0;
     const off  = +sp.offset||0;
     const rate = +sp.rate||0;
     const term = +sp.term||0;
     const ltype= sp.ltype||'pi';
+    const purpose = sp.purpose||'rental';
     const eff  = Math.max(0, bal - off);
     const moInt= +(eff*(rate/100)/12).toFixed(2);
     const saved= +(off*(rate/100)/12).toFixed(2);
@@ -5650,6 +5666,8 @@ function propMetrics(p){
     interestSaved   += saved;
     annualInterest  += moInt*12;
     repay           += +(+sp.repay || autoR);
+    if(purpose==='investment') investmentAnnualInterest += moInt*12;
+    if(purpose==='personal')   personalAnnualInterest   += moInt*12;
   });
   monthlyInterest = +monthlyInterest.toFixed(2);
   interestSaved   = +interestSaved.toFixed(2);
@@ -5671,7 +5689,7 @@ function propMetrics(p){
   const netYield      = cval>0?(annualNetRent/cval)*100:0;
   const principalRepaid = loanInit - loanCur;
 
-  return { cval,pprice,pcosts,loanCur,loanInit,effectiveLoan,
+  return { cval,pprice,pcosts,loanCur,loanInit,effectiveLoan,investmentAnnualInterest,personalAnnualInterest,
     monthlyInterest,interestSaved,annualInterest,
     equity,gainRaw,gainPct,lvr,annualRent,annualNetRent,
     grossYield,netYield,repay,principalRepaid,wtRate,splits };
@@ -5716,6 +5734,7 @@ function readPropForm(){
       term:    parseFloat(row.querySelector('.sp-term').value)||0,
       repay:   parseFloat(row.querySelector('.sp-repay').value)||0,
       offset:  parseFloat(row.querySelector('.sp-offset').value)||0,
+      purpose: (row.querySelector('.sp-purpose')||{value:'rental'}).value || 'rental',
     });
   });
   return {
@@ -5871,7 +5890,13 @@ function editProperty(btn){
   $('pf-pcosts').value       = p.purchaseCosts||'';
   $('pf-cval').value         = p.currentValue||'';
   $('pf-rent').value         = p.weeklyRent||'';
-  $('pf-expenses').value     = p.annualExpenses||'';
+  // Prefill Annual Expenses from Tax tab (rates+insurance+repairs+agent+other)
+  const _taxFY = getTaxFY();
+  const _taxRec = (taxData[taxKey(_taxFY)]||{}).props||{};
+  const _tpr = _taxRec[p.id]||{};
+  const _taxExpenses = (+_tpr.rates||0)+(+_tpr.insurance||0)+(+_tpr.repairs||0)+(+_tpr.agent||0)+(+_tpr.other||0);
+  // Use tax expenses if they exist, otherwise fall back to stored annualExpenses
+  $('pf-expenses').value = _taxExpenses > 0 ? _taxExpenses : (p.annualExpenses||'');
   if($('pf-owner')) $('pf-owner').value = p.owner||'lumia';
   $('pf-mgr').value          = p.hasManager||'no';
   $('pf-notes').value        = p.notes||'';
@@ -6015,6 +6040,8 @@ function renderProperties(){
             ${stat('Annual Rent',      n2(m.annualRent), 'pos')}
             ${stat('Annual Expenses',  n2(+p.annualExpenses||0), 'neg')}
             ${stat('Annual Interest',  n2(m.annualInterest), 'neg')}
+            ${m.investmentAnnualInterest>0 ? stat('\u2514 Investment (📈 deductible)', n2(m.investmentAnnualInterest), 'neg') : ''}
+            ${m.personalAnnualInterest>0   ? stat('\u2514 Personal (👤 not deductible)', n2(m.personalAnnualInterest), 'neu') : ''}
             ${stat('Net Annual Income',n2(m.annualNetRent), clr(m.annualNetRent))}
             ${stat('Gross Yield',      m.grossYield.toFixed(2)+'%', m.grossYield>0?'pos':'neu')}
             ${stat('Net Yield',        m.netYield.toFixed(2)+'%',   clr(m.netYield))}
@@ -7862,26 +7889,42 @@ function renderTax(){
 
   // ── Property P&L per person ───────────────────────────────────
   function propPnL(owner){
-    let netRent=0, netExpenses=0;
+    let netRent=0, netExpenses=0, investInterest=0;
     properties.forEach(p=>{
-      const pOwner = p.owner || 'joint';  // default to joint if unset
+      const pOwner = p.owner || 'joint';
       const isOwner = pOwner===owner || pOwner==='joint';
       if(!isOwner) return;
-      // PPOR cannot claim rental income or deductions for tax purposes
-      if(p.propType === 'ppor') return;
       const share = pOwner==='joint' ? 0.5 : 1;
-      const m = propMetrics(p);
+
+      // Always scan splits for investment-purpose interest — even on PPOR.
+      // Investment loan interest (e.g. redraw used to buy shares) is deductible
+      // against investment income regardless of property type.
+      let rentalInterest = 0, invInterest = 0;
+      (normaliseSplits(p)).forEach(sp => {
+        const purpose = sp.purpose || 'rental';
+        const bal = +sp.balance||0, off = +sp.offset||0, rate = +sp.rate||0;
+        const annInt = Math.max(0, bal - off) * (rate/100);
+        if(purpose === 'investment') invInterest  += annInt;
+        else if(purpose === 'rental') rentalInterest += annInt;
+        // personal: not deductible — skip
+      });
+      investInterest += invInterest * share;
+
+      // PPOR: no rental income, no rental deductions — stop here.
+      if(p.propType === 'ppor') return;
+
       const annualRent = (p.weeklyRent||0)*52*share;
-      const annualInterest = m.monthlyInterest*12*share;
       const pRec = rec.props[p.id] || {};
       const expenses = share*(
         (+pRec.rates||0)+(+pRec.insurance||0)+(+pRec.repairs||0)+
         (+pRec.agent||0)+(+pRec.other||0)+(+pRec.depr_bldg||0)+(+pRec.depr_pe||0)
-      ) + annualInterest;
-      netRent += annualRent;
+      ) + rentalInterest * share;
+
+      netRent     += annualRent;
       netExpenses += expenses;
     });
-    return { netRent, netExpenses, netPropLoss: Math.max(0, netExpenses-netRent),
+    return { netRent, netExpenses, investInterest,
+             netPropLoss: Math.max(0, netExpenses-netRent),
              netPropGain: Math.max(0, netRent-netExpenses) };
   }
 
@@ -7910,7 +7953,9 @@ function renderTax(){
       return s+frankingCredit((+d.amount||0)*share, d.frankingPct||0);
     },0);
     // Salary sacrifice reduces taxable income
-    const taxableIncome = (salary - sacrifice) + myDiv + myFrank + netPropGain - netPropLoss + myCGT;
+    // Investment interest (e.g. loan used to buy shares) deducted from dividend income
+    const investInterestDeduction = propPnLResult.investInterest || 0;
+    const taxableIncome = (salary - sacrifice) + myDiv + myFrank - investInterestDeduction + netPropGain - netPropLoss + myCGT;
     const grossTax  = calcTax(Math.max(0, taxableIncome));
     const hecsRep   = calcHECS(Math.max(0, taxableIncome), hecsDebt);
     // Division 293: extra 15% tax on concessional contributions if income > $250,000
@@ -7940,7 +7985,7 @@ function renderTax(){
     const totalLiability = grossTax + hecsRep + mls + div293;
     const netTax    = Math.max(0, totalLiability - withheld - payg - myFrank);
     const refund    = Math.max(0, withheld + payg + myFrank - totalLiability);
-    return { salary, withheld, payg, sacrifice, myDiv, myFrank,
+    return { salary, withheld, payg, sacrifice, myDiv, myFrank, investInterestDeduction,
              netPropLoss, netPropGain, netRent, netExpenses,
              myCGT, taxableIncome, grossTax, hecsRep, mls, div293,
              totalLiability, netTax, refund, hecsDebt, hasPrivH,
@@ -8038,7 +8083,7 @@ function renderTax(){
               const w = +pRec.withheld||0;
               if(!s||!w) return '';
               const pct = (w/s*100).toFixed(1);
-              const clr = w/s > 0.35 ? 'var(--neg)' : w/s > 0.25 ? 'var(--gold)' : 'var(--pos)';
+              const clr = w/s > 0.35 ? 'var(--red)' : w/s > 0.25 ? 'var(--gold)' : 'var(--green)';
               return `<div style="margin-top:4px;font-size:11px;font-family:var(--mono);color:${clr}">`
                 + `${pct}% of gross salary</div>`;
             })()}
@@ -8143,6 +8188,12 @@ function renderTax(){
         ${row('Gross Salary',n2(lumTax.salary),n2(chiTax.salary))}
         ${row('Dividend Income (cash)',n2(lumTax.myDiv),n2(chiTax.myDiv),'','from dividends tab')}
         ${row('Franking Credits','+'+n2(lumTax.myFrank),'+'+n2(chiTax.myFrank),'pos')}
+        ${(lumTax.investInterestDeduction>0||chiTax.investInterestDeduction>0)?row(
+          'Investment Interest Deduction',
+          lumTax.investInterestDeduction>0?'-'+n2(lumTax.investInterestDeduction):'—',
+          chiTax.investInterestDeduction>0?'-'+n2(chiTax.investInterestDeduction):'—',
+          'neg','interest on loan used to buy investments'
+        ):''}
         ${row('Net Rental Income',lumTax.netRent>lumTax.netExpenses?'+'+n2(lumTax.netRent-lumTax.netExpenses):'—',chiTax.netRent>chiTax.netExpenses?'+'+n2(chiTax.netRent-chiTax.netExpenses):'—')}
         ${row('Rental Loss (negative gearing)',lumTax.netPropLoss>0?'-'+n2(lumTax.netPropLoss):'—',chiTax.netPropLoss>0?'-'+n2(chiTax.netPropLoss):'—','neg')}
         ${row('Net Capital Gain (after 50% disc)',n2(lumTax.myCGT),n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -$'+n2(cgt.totalLoss):'')}
