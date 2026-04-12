@@ -4514,7 +4514,7 @@ function renderDividends(){
   const EDIT_BTN = `cursor:pointer;background:#1a2f4a;color:#3d9cf0;border:1px solid #3d9cf0;border-radius:4px;padding:3px 8px;font-size:11px;margin-right:4px`;
 
   $('dv-body').innerHTML = filtered.map(d=>{
-    if(editingDivId == d.id){
+    if(editingDivId != null && String(editingDivId) === String(d.id)){
       // Inline edit row
       return `<tr style="background:var(--bg2);outline:2px solid var(--blue)">
         <td><input class="fi" type="date" id="ed-date" value="${d.date}" style="width:118px;padding:3px 5px"></td>
@@ -4586,7 +4586,7 @@ function delDiv(idx){
 let properties = (()=>{try{return JSON.parse(localStorage.getItem('pt_props')||'[]');}catch(e){return [];}})() ;
 
 function doEditDiv(id){
-  editingDivId = +id;  // uid() returns a number; coerce from onclick string
+  editingDivId = id;  // keep as string — IDs can be numeric or 'div_xxx' strings
   renderDividends();
   // Scroll the editing row into view
   setTimeout(()=>{
