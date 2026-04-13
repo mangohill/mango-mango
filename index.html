@@ -140,7 +140,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
 <div class="header">
   <div class="logo"><div class="logo-dot" id="logo-dot"></div>PORTFOLIO TRACKER</div>
   <div class="hdr-r">
-    <button class="btn" onclick="refreshPrices()">↻ PRICES</button>
+    <button class="btn" onclick="refreshPrices()">↻ PRICES</button><span id="price-refresh-status" style="font-size:11px;font-family:var(--mono);color:var(--text3);white-space:nowrap"></span>
     <button class="btn" onclick="syncPush()" id="hdr-sync-push" title="Push data to GitHub Gist">☁ PUSH</button>
     <button class="btn" onclick="syncPull()" id="hdr-sync-pull" title="Pull data from GitHub Gist">⬇ PULL</button>
     <span id="hdr-sync-status" style="font-family:var(--mono);font-size:10px;color:var(--text3);white-space:nowrap"></span>
@@ -2690,10 +2690,12 @@ async function refreshPrices(){
 
   save();
   const now = new Date().toLocaleTimeString('en-AU');
-  $('cpt').textContent = 'Updated '+now;
+  if($('cpt')) $('cpt').textContent = 'Updated '+now;
   renderH(); renderPrices();
 
   const total = cryptoFetched + stockFetched;
+  const statusEl = $('price-refresh-status');
+  if(statusEl) statusEl.textContent = total > 0 ? `✓ ${total} updated · ${now}` : `Updated ${now}`;
   if(total > 0) notify(`${total} prices updated ✓`,'ok');
 }
 
