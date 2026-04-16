@@ -181,6 +181,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
           <option value="">All types</option><option value="crypto">Crypto</option>
           <option value="stock">Stock</option><option value="etf">ETF</option><option value="lic">LIC</option><option value="reit">REIT</option><option value="bond">Bond</option><option value="commodity">Commodity</option><option value="managed">Managed Fund</option><option value="super">Super/Pension</option>
         </select>
+        <select class="fsm" id="ht-own" onchange="renderH()"><option value="">All Owners</option></select>
       </div>
     </div>
     <div class="ovx">
@@ -496,6 +497,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
           <option value="loss">In Loss Only</option>
           <option value="noPrice">No Price Set</option>
         </select>
+        <select class="fsm" id="hd-own" onchange="renderHD()"><option value="">All Owners</option></select>
       </div>
     </div>
     <div class="ovx">
@@ -1807,8 +1809,22 @@ function renderH(){
     _fsel.innerHTML = '<option value="">All Types</option>' +
       _allTypes.map(t=>`<option value="${t}" ${t===_cur?'selected':''}>${AT_NAMES[t]||t}</option>`).join('');
   }
+  // Rebuild ht-own owner filter
+  const _htOwn = $('ht-own');
+  const _htOwnCur = _htOwn ? _htOwn.value : '';
+  if(_htOwn) _htOwn.innerHTML = '<option value="">All Owners</option>' +
+    getAllPersons().concat(['joint']).map(p=>
+      `<option value="${p}" ${p===_htOwnCur?'selected':''}>${getPersonLabel(p)}</option>`
+    ).join('');
+  const ownerF_h = _htOwnCur;
+
   const s = ($('hs').value||'').toLowerCase(), tf = $('ht').value;
-  let f = holdings.filter(h=>(!s||h.symbol.toLowerCase().includes(s))&&(!tf||h.assetType===tf));
+  let f = holdings.filter(h=>{
+    if(s && !h.symbol.toLowerCase().includes(s)) return false;
+    if(tf && h.assetType !== tf) return false;
+    if(ownerF_h && getSymbolOwner(h.symbol) !== ownerF_h) return false;
+    return true;
+  });
   $('he').style.display = f.length ? 'none' : '';
 
   // Apply sort
@@ -1975,6 +1991,7 @@ function renderT(){
       html += '<td><select class="fi" id="et-side" style="padding:3px 5px">';
       html += '<option value="buy"'  + (t.type==='buy'  ? ' selected' : '') + '>Buy</option>';
       html += '<option value="sell"' + (t.type==='sell' ? ' selected' : '') + '>Sell</option>';
+      html += '<option value="drp"'  + (t.type==='drp'  ? ' selected' : '') + '>DRP</option>';
       html += '</select></td>';
       html += '<td><input class="fi" type="text" id="et-sym" value="' + t.symbol + '" style="width:65px;padding:3px 5px" oninput="this.value=this.value.toUpperCase()"></td>';
       html += '<td><select class="fi" id="et-type" style="padding:3px 5px;font-size:11px">';
@@ -3334,6 +3351,13 @@ function renderHD(){
   const typeF   = $('hd-type').value;
   const showF   = $('hd-show').value;
 
+  // Rebuild hd-own from actual owners
+  const _hdOwn = $('hd-own');
+  const _hdOwnCur = _hdOwn ? _hdOwn.value : '';
+  if(_hdOwn) _hdOwn.innerHTML = '<option value="">All Owners</option>' +
+    getAllPersons().concat(['joint']).map(p=>`<option value="${p}" ${p===_hdOwnCur?'selected':''}>${getPersonLabel(p)}</option>`).join('');
+  const ownerF_hd = _hdOwnCur;
+
   // Map dropdown value to sort col/dir for initial load
   if(!SORT_STATE['hd-body'] || !SORT_STATE['hd-body'].col){
     const dropMap = {
@@ -3369,6 +3393,7 @@ function renderHD(){
   rows = rows.filter(h=>{
     if(search && !h.symbol.toLowerCase().includes(search)) return false;
     if(typeF && h.assetType!==typeF) return false;
+    if(ownerF_hd && getSymbolOwner(h.symbol) !== ownerF_hd) return false;
     if(showF==='profit' && (h.pnl==null||h.pnl<=0)) return false;
     if(showF==='loss'   && (h.pnl==null||h.pnl>=0)) return false;
     if(showF==='noprice'&& h.cur!=null) return false;
@@ -4464,7 +4489,7 @@ function renderDividends(){
     '<th style="text-align:right">Franking</th>' +
     '<th>Notes</th><th></th>';
 
-  const TYPES = ['dividend','distribution','interest','staking','airdrop'];
+  const TYPES = ['dividend','distribution','drp','interest','staking','airdrop'];
   const TYPE_LABEL = {dividend:'Dividend',distribution:'Distribution',interest:'Interest',staking:'Staking',airdrop:'Airdrop',drp:'DRP'};
   const EDIT_BTN = `cursor:pointer;background:#1a2f4a;color:#3d9cf0;border:1px solid #3d9cf0;border-radius:4px;padding:3px 8px;font-size:11px;margin-right:4px`;
 
@@ -4503,14 +4528,14 @@ function renderDividends(){
   }).join('');
 
   // Filtered total footer — shown when search/filter/FY is active
-  const hasFilter = search || typeF || dvFYFilter !== 'ALL';
+  const hasFilter = search || typeF || ownerF || _dvSymCur || dvFYFilter !== 'ALL';
   const filteredTotal = filtered.reduce((s,d)=>s+(+d.amount||0),0);
   const filteredCount = filtered.length;
   const foot = $('dv-foot');
   if(foot){
     if(hasFilter && filteredCount > 0){
       foot.innerHTML = `<tr style="font-weight:700;border-top:2px solid var(--bo)">
-        <td colspan="3" style="color:var(--text2);font-size:12px">
+        <td colspan="4" style="color:var(--text2);font-size:12px">
           ${filteredCount} result${filteredCount!==1?'s':''} shown
         </td>
         <td style="text-align:right;color:var(--gold);font-size:13px">
@@ -4519,7 +4544,7 @@ function renderDividends(){
         <td style="text-align:right;color:var(--blue);font-size:12px">
           $${grossUpTotal(filtered).toFixed(2)}
         </td>
-        <td colspan="2" style="color:var(--text3);font-size:11px">filtered total (grossed-up: above)</td>
+        <td colspan="3" style="color:var(--text3);font-size:11px">filtered total (grossed-up: above)</td>
       </tr>`;
     } else {
       foot.innerHTML = '';
@@ -8427,7 +8452,7 @@ async function checkExpectedDividends() {
   }
 
   // Get all unique symbols that are ETF/LIC/REIT/stock type (not crypto/managed)
-  const eligibleTypes = new Set(['etf','lic','reit','asx_stock']);
+  const eligibleTypes = new Set(['etf','lic','reit','asx_stock','stock','managed']);
   const symbols = [...new Set(
     trades
       .filter(t => (t.type==='buy'||t.type==='drp') && eligibleTypes.has(t.assetType))
