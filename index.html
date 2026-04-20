@@ -1161,7 +1161,7 @@ function promptAddPerson(){
   const name = prompt('Enter name (e.g. "Partner", "Trust", "Company"):');
   if(!name||!name.trim()) return;
   const key = addPerson(name.trim());
-  if(key){ notify(getPersonLabel(key)+' added ✓'); refreshOwnerSelects(); renderTax(); }
+  if(key){ notify(getPersonLabel(key)+' added ✓'); refreshOwnerSelects(); renderTax(); if(typeof renderOwnershipGrid==='function') renderOwnershipGrid(); }
 }
 function refreshOwnerSelects(){
   // Rebuild all owner selects across the app
@@ -1617,7 +1617,7 @@ function confirmImp(){
   $('cf').value='';
   const msg = skipped > 0 ? `✓ Imported ${toAdd.length} trades (${skipped} duplicate${skipped>1?'s':''} skipped)` : `✓ Imported ${toAdd.length} trades`;
   notify(msg,'ok');
-  renderH(); renderT();
+  renderH(); renderT(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics();
 }
 function cancelImp(){pending=[];$('ipv').style.display='none';}
 
@@ -1940,7 +1940,6 @@ function cyclePortfolioView(){
   portfolioView = (portfolioView + 1) % 3;
   renderH();
 }
-
 function renderT(){
   const s=($('ts').value||'').toLowerCase(), si=$('tsi').value, so=$('tso').value;
   let f=[...trades].filter(t=>
@@ -2003,7 +2002,9 @@ function renderT(){
 
       html += '<td><select class="fi" id="et-source" style="padding:3px 5px;font-size:11px">';
       getAllBrokers().forEach(b=>{ html += '<option value="' + b.value + '"' + (t.source===b.value?' selected':'') + '>' + b.label + '</option>'; });
-      html += '</select></td>';      html += '<td colspan="2" style="white-space:nowrap;padding:6px 8px">';
+      html += '</select></td>';
+      html += '<td><input class="fi" type="text" id="et-notes" value="' + escHtml(t.notes||'') + '" placeholder="Notes…" style="width:120px;padding:3px 5px"></td>';
+      html += '<td colspan="2" style="white-space:nowrap;padding:6px 8px">';
       html += '<button class="btn btn-g" style="padding:4px 12px;font-size:11px" onclick="saveEditTrade()">&#10003; SAVE</button> ';
       html += '<button class="btn" style="padding:4px 8px;font-size:11px" onclick="cancelEditTrade()">&#10005;</button>';
       html += '</td></tr>';
@@ -2193,9 +2194,9 @@ function applyRetype(){
   const total = trades.filter(t=>t.symbol===sym).length;
   const changed = retypeAllTrades(sym, newType, true);
   document.getElementById('retype-panel')?.remove();
+  renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics();
   notify(`Updated ${total} trade${total!==1?'s':''} for ${sym} → ${newType} (${changed} type${changed!==1?'s':''} changed) ✓`);
 }
-
 
 function saveEditTrade(){
   const idx = trades.findIndex(t=>t.id===editingTradeId);
@@ -2208,11 +2209,12 @@ function saveEditTrade(){
   const price = parseFloat($('et-price').value);
   const fees  = parseFloat($('et-fees').value)||0;
   const source = ($('et-source')?.value || trades[idx]?.source || '');
+  const notes  = ($('et-notes')?.value ?? trades[idx]?.notes ?? '').trim();
   if(!date||!sym||isNaN(units)||isNaN(price)){ notify('Fill all required fields.','err'); return; }
   if(units<=0){ notify('Units must be greater than zero.','err'); return; }
   if(price<0){ notify('Price cannot be negative.','err'); return; }
   const prevAsset = trades[idx].assetType;
-  trades[idx] = {...trades[idx], date, symbol:sym, type, assetType:asset, units, price, fees, source};
+  trades[idx] = {...trades[idx], date, symbol:sym, type, assetType:asset, units, price, fees, source, notes};
   // Offer bulk retype if assetType changed and other trades exist for this symbol
   if(asset !== prevAsset){
     const others = trades.filter((t,i)=> i!==idx && t.symbol===sym && t.assetType!==asset);
@@ -2224,7 +2226,7 @@ function saveEditTrade(){
     }
   }
   editingTradeId = null;
-  save(); renderT(); renderH(); renderR();
+  save(); renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics();
   notify('Trade updated ✓');
 }
 
@@ -2262,7 +2264,7 @@ function delT(idx){
   if(idx < 0 || idx >= trades.length){ notify('Trade not found.','err'); return; }
   if(!confirm('Delete this trade?')) return;
   trades.splice(idx,1); save(); renderT(); renderH(); renderR();
-  notify('Trade deleted.','err');
+  notify('Trade deleted.','ok');
 }
 function renderR(){
   const man=[...trades].filter(t=>t.source==='manual').reverse().slice(0,8);
@@ -2725,7 +2727,7 @@ function setManualPrice(){
   save(); renderH(); renderPrices();
   $('mp-sym').value=''; $('mp-price').value='';
   $('mp-sym').focus();
-  notify(`✓ ${sym} = $${price}`,'ok');
+  notify(`✓ ${sym} = ${n2(price)}`,'ok');
 }
 
 // Bulk price paste: "DHHF 39.50, NDQ 45.20" or one per line
@@ -2940,11 +2942,20 @@ function exportXLSX(){
 }
 
 function clearAll(){
-  if(!confirm('Delete ALL trades and price data? Cannot be undone.')) return;
+  if(!confirm('Delete ALL data? This clears trades, dividends, properties, super, tax records, prices and spending. Cannot be undone.')) return;
   trades=[]; prices={}; dividends=[]; properties=[];
-  localStorage.removeItem('pt_trades'); localStorage.removeItem('pt_prices'); localStorage.removeItem('pt_divs'); localStorage.removeItem('pt_props');
-  renderH(); renderT(); renderR();
-  notify('All data cleared.','err');
+  superAccounts=[]; taxData={}; stockOwners={}; spendingData=[]; extraPersons=[];
+  const keys = ['pt_trades','pt_prices','pt_divs','pt_props','pt_super','pt_tax',
+                 'pt_stock_owners','pt_spending','pt_extra_persons','pt_drp_carry'];
+  keys.forEach(k => localStorage.removeItem(k));
+  renderH(); renderT(); renderR(); renderHD();
+  renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards();
+  renderProperties();
+  try { renderSuperAccounts(); renderSuperCards(); renderSuperChart(); } catch(e){}
+  try { renderTax(); } catch(e){}
+  try { renderSpending(); } catch(e){}
+  try { renderOwnershipGrid(); } catch(e){}
+  notify('All data cleared.','ok');
 }
 
 
@@ -3535,7 +3546,7 @@ function parseBinanceCSV(text, filename){
     added++;
   }
 
-  if(added){ save(); renderT(); renderH(); renderR(); }
+  if(added){ save(); renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics(); }
   notify(`Binance CSV: ${added} imported, ${skipped} skipped (dupes)${errors?', '+errors+' errors':''}`,
          added?'ok':'err');
 }
@@ -3601,7 +3612,7 @@ function importDividendFile(input){
             dividends.push({ date, symbol, amount, type:'dividend', id:uid() });
           }
           save();
-          renderFYBar(); renderDividends(); renderDivCards(); renderH(); renderT();
+          renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards(); renderH(); renderT();
           status.textContent = '✓ Imported ' + result.symbol + ' ' + result.type + ' $' + result.amount;
           notify('✓ ' + result.symbol + ' ' + result.type + ' imported');
         } catch(e){
@@ -3741,7 +3752,7 @@ async function importDividendPDF(input){
 
   if(imported > 0){
     save();
-    renderFYBar(); renderDividends(); renderDivCards();
+    renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards();
     renderH(); renderT();
   }
 
@@ -4127,7 +4138,7 @@ function showDividendPreview(parsed, filename){
   $('div-import-preview-title').textContent =
     'PREVIEW — ' + newCount + ' NEW, ' + dupCount + ' DUPLICATE' + (dupCount!==1?'S':'') + ' (will be skipped)';
 
-  const typeLabel = {dividend:'Dividend',distribution:'Distribution',interest:'Interest',staking:'Staking',airdrop:'Airdrop'};
+  const typeLabel = {dividend:'Dividend',distribution:'Distribution',drp:'DRP',interest:'Interest',staking:'Staking',airdrop:'Airdrop'};
   $('div-import-tbody').innerHTML = parsed.map(d => {
     const dup = isDivDuplicate(d);
     return '<tr style="' + (dup ? 'opacity:0.4' : '') + '">'
@@ -4261,12 +4272,12 @@ function dvDrpCalc(){
   if(!pt) return;
 
   if(sym && units > 0 && price > 0){
-    pt.innerHTML = '📈 Trade: DRP BUY ' + sym + ' — ' + nN(units,4) + ' units @ $' + n2(price, dec(price)) + ' = $' + n2(reinvested);
-    pd.innerHTML = '💰 Dividend: ' + sym + ' DRP $' + n2(amount) + (carryIn > 0.005 ? ' + $' + n2(carryIn) + ' carry-in' : '') + ' = $' + n2(available) + ' available';
-    pc.innerHTML = carryOut > 0.005 ? '↩ Carry-forward to next DRP: $' + n2(carryOut) : '✓ Fully reinvested';
+    pt.innerHTML = '📈 Trade: DRP BUY ' + sym + ' — ' + nN(units,4) + ' units @ ' + n2(price, dec(price)) + ' = ' + n2(reinvested);
+    pd.innerHTML = '💰 Dividend: ' + sym + ' DRP ' + n2(amount) + (carryIn > 0.005 ? ' + ' + n2(carryIn) + ' carry-in' : '') + ' = ' + n2(available) + ' available';
+    pc.innerHTML = carryOut > 0.005 ? '↩ Carry-forward to next DRP: ' + n2(carryOut) : '✓ Fully reinvested';
   } else {
     pt.innerHTML = '';
-    pd.innerHTML = amount > 0 ? '💰 Dividend: $' + n2(amount) + (carryIn > 0.005 ? ' + $' + n2(carryIn) + ' carry-in = $' + n2(available) : '') : '';
+    pd.innerHTML = amount > 0 ? '💰 Dividend: ' + n2(amount) + (carryIn > 0.005 ? ' + ' + n2(carryIn) + ' carry-in = ' + n2(available) : '') : '';
     pc.innerHTML = '';
   }
 }
@@ -4558,7 +4569,7 @@ function delDiv(idx){
   if(!confirm('Delete this dividend entry?')) return;
   dividends.splice(idx,1); save();
   renderDividends(); renderDivCharts(); renderDivCards();
-  notify('Dividend deleted.','err');
+  notify('Dividend deleted.','ok');
 }
 
 
@@ -4871,7 +4882,7 @@ function deleteSuperAccount(btn){
   renderSuperAccounts();
   renderSuperCards();
   renderSuperChart();
-  notify('Account deleted.','err');
+  notify('Account deleted.','ok');
 }
 
 function renderSuperCards(){
@@ -4899,11 +4910,11 @@ function renderSuperCards(){
     const gPct      = growth !== null && totalPrev > 0 ? (growth/totalPrev)*100 : null;
     const n         = superAccounts.length;
     balLabel  = 'Total Balance';
-    balVal    = '$' + n2(totalBal);
+    balVal    = n2(totalBal);
     balSub    = n + ' account' + (n===1?'':'s') + (n>0?' · click to cycle ↻':'');
     prevLabel = 'FY' + PREV_FY + ' Balance';
-    prevVal   = totalPrev > 0 ? '$' + n2(totalPrev) : '—';
-    growthVal = growth !== null ? (growth>=0?'+':'') + '$' + n2(growth) : '—';
+    prevVal   = totalPrev > 0 ? n2(totalPrev) : '—';
+    growthVal = growth !== null ? (growth>=0?'+':'') + n2(growth) : '—';
     growthPct = gPct   !== null ? (gPct>=0?'+':'')   + gPct.toFixed(1)+'%' : '';
     accentColor = null;
     el.style.outline = '';
@@ -4917,11 +4928,11 @@ function renderSuperCards(){
     const _a = superAccounts[suCardView-1];
     accentColor  = (_a && _a.color) ? _a.color : COLORS[(suCardView-1) % COLORS.length];
     balLabel  = a.name;
-    balVal    = '$' + n2(bal);
+    balVal    = n2(bal);
     balSub    = 'click to cycle ↻';
     prevLabel = 'FY' + PREV_FY + ' Balance';
-    prevVal   = prev !== null ? '$' + n2(prev) : '—';
-    growthVal = growth !== null ? (growth>=0?'+':'') + '$' + n2(growth) : '—';
+    prevVal   = prev !== null ? n2(prev) : '—';
+    growthVal = growth !== null ? (growth>=0?'+':'') + n2(growth) : '—';
     growthPct = gPct   !== null ? (gPct>=0?'+':'')   + gPct.toFixed(1)+'%' : '';
     el.style.outline = '2px solid ' + accentColor;
     el.style.borderRadius = '7px';
@@ -5262,7 +5273,7 @@ function renderSuperChart(){
       interaction: { mode:'index', intersect:false },
       plugins: {
         legend: { display:true, labels:{ color:textClr, font:{size:11}, boxWidth:12, padding:16 } },
-        tooltip: { callbacks: { label: ctx => ' '+ctx.dataset.label+': $'+n2(ctx.parsed.y) } }
+        tooltip: { callbacks: { label: ctx => ' '+ctx.dataset.label+': '+n2(ctx.parsed.y) } }
       },
       scales: {
         x: { grid:{ color:gridClr }, ticks:{ color:textClr, font:{size:11} } },
@@ -5545,7 +5556,7 @@ function applyRemoteData(remote){
   if(d.su_combined_color){ suCombinedColor = d.su_combined_color;
                            localStorage.setItem('su_combined_color', d.su_combined_color); }
   refreshAllBrokerSelects();
-  renderH(); renderT(); renderHD();
+  renderH(); renderT(); renderR(); renderHD();
   renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards();
   renderProperties(); renderAnalytics();
   try { renderSuperAccounts(); renderSuperCards(); renderSuperChart(); } catch(e){}
@@ -5829,6 +5840,7 @@ function saveProperty(){
   clearPropForm();
   renderProperties();
   renderPropCards();
+  if(typeof renderTax==='function') renderTax();
   notify('Property saved ✓');
 }
 
@@ -5975,7 +5987,8 @@ function deleteProperty(btn){
   saveProps();
   renderProperties();
   renderPropCards();
-  notify('Property deleted.','err');
+  if(typeof renderTax==='function') renderTax();
+  notify('Property deleted.','ok');
 }
 
 const PROP_TYPE_LABEL = {ppor:'PPOR',investment:'Investment',commercial:'Commercial',land:'Land'};
@@ -6133,7 +6146,7 @@ function renderPropCards(){
   const debtVal   = propDebtNet ? netDebt   : totalDebt;
   const debtLabel = propDebtNet ? 'Net Debt' : 'Total Debt';
   const debtSub   = propDebtNet
-    ? 'Debt − offsets ($'+n2(totalOffset)+') ↻'
+    ? 'Debt − offsets ('+n2(totalOffset)+') ↻'
     : 'Outstanding loans ↻';
 
   // Rent toggle — whole card clickable
@@ -6237,12 +6250,12 @@ function renderPrices(){
 function deletePrice(btn){
   const sym = btn.dataset.sym;
   delete prices[sym]; save(); renderH(); renderPrices();
-  notify(`Price cleared: ${sym}`,'info');
+  notify(`Price cleared: ${sym}`,'ok');
 }
 function clearAllPrices(){
   if(!confirm('Clear all cached prices?')) return;
   prices={}; save(); renderH(); renderPrices();
-  notify('All prices cleared.','err');
+  notify('All prices cleared.','ok');
 }
 
 
@@ -6787,7 +6800,7 @@ function clearSpendingData(){
   localStorage.removeItem('pt_spending');
   spFY=null; spCatFilter=null; spInCatFilter=null;
   renderSpFYBar(); renderSpending();
-  notify('Spending data cleared.','err');
+  notify('Spending data cleared.','ok');
 }
 
 
@@ -6956,7 +6969,7 @@ function backupConfirm(){
 
   // Re-render everything
   refreshAllBrokerSelects();
-  renderH(); renderT(); renderHD();
+  renderH(); renderT(); renderR(); renderHD();
   renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards();
   renderProperties(); renderAnalytics();
   try { renderSuperAccounts(); renderSuperCards(); renderSuperChart(); } catch(e){}
@@ -7233,7 +7246,7 @@ function csvImportTrades(rows, filename){
     trades.push(t);
     added++;
   }
-  if(added) { save(); renderT(); renderH(); }
+  if(added) { save(); renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics(); }
   return {ok:true, msg:`✓ Trades from ${filename}: ${added} added, ${skipped} skipped (dupes)${errors ? ', '+errors+' invalid rows ignored' : ''}`};
 }
 
@@ -7265,7 +7278,7 @@ function csvImportDividends(rows, filename){
     dividends.push(d);
     added++;
   }
-  if(added){ save(); renderFYBar(); renderDividends(); renderDivCards(); }
+  if(added){ save(); renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards(); }
   return {ok:true, msg:`✓ Dividends from ${filename}: ${added} added, ${skipped} skipped${errors ? ', '+errors+' invalid' : ''}`};
 }
 
@@ -7336,7 +7349,7 @@ function csvImportProperties(rows, filename){
     const p = {
       id:            'prop_' + uid(),
       name,
-      propType:      g(r,'type','proptype','prop_type') || 'residential',
+      propType:      g(r,'type','proptype','prop_type','propType') || 'investment',
       purchaseDate:  g(r,'purchase_date','purchasedate') || '',
       purchasePrice: parseFloat(g(r,'purchase_price','purchaseprice')) || 0,
       purchaseCosts: parseFloat(g(r,'purchase_costs','purchasecosts')) || 0,
@@ -7345,12 +7358,13 @@ function csvImportProperties(rows, filename){
       weeklyRent:    parseFloat(g(r,'weekly_rent','weeklyrent')) || 0,
       annualExpenses:parseFloat(g(r,'annual_expenses','annualexpenses')) || 0,
       hasManager:    g(r,'has_manager','hasmanager') || 'no',
+      owner:         g(r,'owner','property_owner') || 'joint',
       notes:         g(r,'notes') || '',
     };
     properties.push(p);
     added++;
   }
-  if(added){ saveProps(); renderProperties(); renderPropCards(); }
+  if(added){ saveProps(); renderProperties(); renderPropCards(); if(typeof renderTax==='function') renderTax(); }
   return {ok:true, msg:`✓ Properties from ${filename}: ${added} added, ${skipped} skipped (name already exists)`};
 }
 
@@ -8244,7 +8258,7 @@ function renderTax(){
       </div>
       <div style="padding:8px 0;font-size:11px;color:var(--text3)">
         MLS family threshold: ${n2(186000+Math.max(0,(+(rec.dependants||0)-1))*1500)}
-        (base $186,000${+(rec.dependants||0)>1?' + $'+n2(Math.max(0,+(rec.dependants||0)-1)*1500)+' for '+Math.max(0,+(rec.dependants||0)-1)+' extra child'+(Math.max(0,+(rec.dependants||0)-1)>1?'ren':''):''})
+        (base $186,000${+(rec.dependants||0)>1?' + '+n2(Math.max(0,+(rec.dependants||0)-1)*1500)+' for '+Math.max(0,+(rec.dependants||0)-1)+' extra child'+(Math.max(0,+(rec.dependants||0)-1)>1?'ren':''):''})
       </div>
     </div>
   </div>
@@ -8278,7 +8292,7 @@ function renderTax(){
         ):''}
         ${row('Net Rental Income',lumTax.netRent>lumTax.netExpenses?'+'+n2(lumTax.netRent-lumTax.netExpenses):'—',chiTax.netRent>chiTax.netExpenses?'+'+n2(chiTax.netRent-chiTax.netExpenses):'—')}
         ${row('Rental Loss (negative gearing)',lumTax.netPropLoss>0?'-'+n2(lumTax.netPropLoss):'—',chiTax.netPropLoss>0?'-'+n2(chiTax.netPropLoss):'—','neg')}
-        ${row('Net Capital Gain (after 50% disc)',n2(lumTax.myCGT),n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -$'+n2(cgt.totalLoss):'')}
+        ${row('Net Capital Gain (after 50% disc)',n2(lumTax.myCGT),n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -'+n2(cgt.totalLoss):'')}
         <tr style="border-top:1px solid var(--border)">
           <td style="font-size:12px;font-weight:600;padding:6px 8px">Taxable Income</td>
           <td style="font-family:var(--mono);font-size:13px;font-weight:600;text-align:right;padding:6px 8px">
@@ -8321,10 +8335,10 @@ function renderTax(){
         <tr style="border-top:2px solid var(--border);background:rgba(255,255,255,0.03)">
           <td style="font-size:13px;font-weight:700;padding:8px 8px">
             ${lumTax.refund>0||chiTax.refund>0?'Estimated Refund':'Estimated Tax Owing'}</td>
-          <td style="font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;padding:8px 8px;class:${lumTax.refund>0?'pos':'neg'}">
-            <span class="${lumTax.refund>0?'pos':'neg'}">${lumTax.refund>0?'REFUND $'+n2(lumTax.refund):'OWING $'+n2(lumTax.netTax)}</span></td>
+          <td style="font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;padding:8px 8px" class="${lumTax.refund>0?'pos':'neg'}">
+            <span class="${lumTax.refund>0?'pos':'neg'}">${lumTax.refund>0?'REFUND '+n2(lumTax.refund):'OWING '+n2(lumTax.netTax)}</span></td>
           <td style="font-family:var(--mono);font-size:15px;font-weight:700;text-align:right;padding:8px 8px">
-            <span class="${chiTax.refund>0?'pos':'neg'}">${chiTax.refund>0?'REFUND $'+n2(chiTax.refund):'OWING $'+n2(chiTax.netTax)}</span></td>
+            <span class="${chiTax.refund>0?'pos':'neg'}">${chiTax.refund>0?'REFUND '+n2(chiTax.refund):'OWING '+n2(chiTax.netTax)}</span></td>
         </tr>
       </tbody>
     </table>
@@ -8648,7 +8662,8 @@ function addSingleMissingDiv(r) {
     notes:      'Auto-added from dividend history check',
   });
   save();
-  notify(`✓ Added ${r.symbol} ${r.date} — $${(+r.expected).toFixed(2)}`, 'ok');
+  renderDivCharts(); renderDivCards();
+  notify(`✓ Added ${r.symbol} ${r.date} — ${n2(+r.expected)}`, 'ok');
   renderDivCheckResults(window._missingDivs
     ? (window._missingDivs = window._missingDivs.filter(m => m.date!==r.date||m.symbol!==r.symbol),
        [...window._missingDivs])
@@ -8674,7 +8689,7 @@ function addAllMissingDivs() {
   save();
   notify(`✓ Added ${missing.length} dividend records`, 'ok');
   window._missingDivs = [];
-  renderDividends();
+  renderDividends(); renderDivCharts(); renderDivCards();
   document.getElementById('div-check-panel').style.display = 'none';
 }
 
