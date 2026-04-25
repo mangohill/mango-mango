@@ -605,12 +605,14 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:8px">
       <button class="btn btn-g" id="dv-save-btn" onclick="addDividend()">ADD DIVIDEND</button>
       <button class="btn" onclick="dvClear()">CLEAR</button>
-      <button class="btn" onclick="checkExpectedDividends()" title="Fetch dividend history from Yahoo Finance and compare against your recorded dividends" style="background:var(--blue-dim,rgba(59,130,246,0.15));color:var(--blue,#3b82f6);border-color:var(--blue,#3b82f6)">🔍 Check Expected Dividends</button>
+      <button class="btn" onclick="checkAndProcessDividends()" title="Check expected dividends from Yahoo Finance + process DRP for enabled symbols" style="background:var(--blue-dim,rgba(59,130,246,0.15));color:var(--blue,#3b82f6);border-color:var(--blue,#3b82f6)">🔍 Check &amp; Process Dividends</button>
 
     </div>
 
   <!-- Div checker results panel -->
   <div id="div-check-panel" style="display:none;margin-bottom:16px"></div>
+  <!-- DRP processing panel -->
+  <div id="drp-tab-panel" style="display:none;margin-bottom:16px"></div>
   </div>
 
   <!-- Chart + table -->
@@ -1091,7 +1093,9 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     <div class="fst">👤 Stock Ownership</div>
     <div style="font-size:12px;color:var(--text3);margin-bottom:12px">
       Assign each stock/ETF to a person. Affects dividend attribution and tax estimates.
-      Changes take effect immediately in Holdings, Dividends, and Tax tabs.
+      Changes take effect immediately in Holdings, Dividends, and Tax tabs.<br>
+      <span style="color:var(--gold)">DRP toggle</span> — enable per symbol to include in DRP processing.
+      Process DRP from the <strong style="color:var(--text)">Dividends tab → 🔍 Check &amp; Process Dividends</strong>.
     </div>
     <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
       <button class="btn" onclick="promptAddPerson()" style="font-size:12px">+ Add Person</button>
@@ -1100,7 +1104,8 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
     <div id="ownership-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px"></div>
     <div style="font-size:10px;color:var(--text3);margin-top:10px">
       Joint = 50/50 split between all persons (default for new stocks)
-    </div>
+    
+</div>
   </div>
 </div>
 
@@ -2946,7 +2951,7 @@ function clearAll(){
   trades=[]; prices={}; dividends=[]; properties=[];
   superAccounts=[]; taxData={}; stockOwners={}; spendingData=[]; extraPersons=[];
   const keys = ['pt_trades','pt_prices','pt_divs','pt_props','pt_super','pt_tax',
-                 'pt_stock_owners','pt_spending','pt_extra_persons','pt_drp_carry'];
+                 'pt_stock_owners','pt_spending','pt_extra_persons','pt_drp_carry','pt_drp_settings'];
   keys.forEach(k => localStorage.removeItem(k));
   renderH(); renderT(); renderR(); renderHD();
   renderFYBar(); renderDividends(); renderDivCharts(); renderDivCards();
@@ -5377,6 +5382,7 @@ function buildSyncPayload(){
       pt_prices:         prices,
       cf_worker_url:     localStorage.getItem('cf_worker_url')||'',
       pt_drp_carry:      (()=>{try{return JSON.parse(localStorage.getItem('pt_drp_carry')||'{}');}catch(e){return {};}})() ,
+      pt_drp_settings:   getDRPSettings(),
       pt_brokers:        getCustomBrokers(),
       pt_super:          superAccounts,
       su_combined_color: localStorage.getItem('su_combined_color')||'#ffffff',
@@ -5854,6 +5860,21 @@ function getDRPCarry(){
 }
 function saveDRPCarry(obj){
   localStorage.setItem('pt_drp_carry', JSON.stringify(obj));
+}
+
+// ── DRP SETTINGS ─────────────────────────────────────────────────────────────
+// Structure: { "DHHF:AU": { enabled: true, fractional: false }, ... }
+function getDRPSettings(){
+  try { return JSON.parse(localStorage.getItem('pt_drp_settings')||'{}'); } catch(e){ return {}; }
+}
+function saveDRPSettings(obj){
+  localStorage.setItem('pt_drp_settings', JSON.stringify(obj));
+}
+function setDRPFlag(sym, field, val){
+  const s = getDRPSettings();
+  if(!s[sym]) s[sym] = { enabled:false, fractional:false };
+  s[sym][field] = val;
+  saveDRPSettings(s);
 }
 
 function drpLoadCarry(){
@@ -6956,6 +6977,7 @@ function backupConfirm(){
   localStorage.setItem('pt_prices',   JSON.stringify(prices));
   if(d.cf_worker_url)  localStorage.setItem('cf_worker_url',  d.cf_worker_url);
   if(d.pt_drp_carry)   localStorage.setItem('pt_drp_carry',  JSON.stringify(d.pt_drp_carry));
+  if(d.pt_drp_settings) localStorage.setItem('pt_drp_settings', JSON.stringify(d.pt_drp_settings));
   if(d.pt_brokers && d.pt_brokers.length) saveCustomBrokers(d.pt_brokers);
   if(d.pt_super){ superAccounts = d.pt_super; saveSuperAccounts(); }
   if(d.pt_tax){ taxData = d.pt_tax; saveTaxData(); }
@@ -7836,20 +7858,40 @@ function renderOwnershipGrid(){
       : escHtml(plainSymbol(sym)) + ' <span style="color:var(--text3);font-size:9px">(sold)</span>';
     const own = getSymbolOwner(sym);
     const col = getPersonColour(own);
-    return `<div style="display:flex;align-items:center;gap:8px;
+    const drpS   = getDRPSettings()[sym] || { enabled:false, fractional:false };
+    const drpOn  = drpS.enabled;
+    const drpFrac= drpS.fractional;
+    return `<div style="display:flex;flex-direction:column;gap:6px;
       padding:8px 12px;background:var(--surface);border-radius:6px;
       border:1px solid ${isCurrent?'var(--border)':'rgba(255,255,255,0.05)'};
       opacity:${isCurrent?'1':'0.65'}">
-      <span style="font-family:var(--mono);font-size:12px;font-weight:600;
-        flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">
-        ${label}
-      </span>
-      <select style="background:${col}22;color:${col};border:1px solid ${col}55;
-        border-radius:8px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer"
-        onchange="changeSymbolOwnerSettings('${escHtml(sym)}',this.value)">
-        ${buildOwnerOptions(own)}
-        <option value="joint" ${own==='joint'?'selected':''}>Joint</option>
-      </select>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span style="font-family:var(--mono);font-size:12px;font-weight:600;
+          flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis">
+          ${label}
+        </span>
+        <select style="background:${col}22;color:${col};border:1px solid ${col}55;
+          border-radius:8px;padding:3px 8px;font-size:11px;font-family:var(--mono);cursor:pointer"
+          onchange="changeSymbolOwnerSettings('${escHtml(sym)}',this.value)">
+          ${buildOwnerOptions(own)}
+          <option value="joint" ${own==='joint'?'selected':''}>Joint</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--text2);user-select:none"
+          title="Enable Dividend Reinvestment Plan for this symbol">
+          <input type="checkbox" ${drpOn?'checked':''} style="accent-color:var(--gold);width:14px;height:14px"
+            onchange="setDRPFlag('${escHtml(sym)}','enabled',this.checked);renderOwnershipGrid()">
+          <span style="color:${drpOn?'var(--gold)':'var(--text3)'};font-family:var(--mono)">DRP</span>
+        </label>
+        ${drpOn ? `
+        <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;color:var(--text2);user-select:none"
+          title="Allow fractional shares in DRP (some brokers support this)">
+          <input type="checkbox" ${drpFrac?'checked':''} style="accent-color:var(--blue);width:14px;height:14px"
+            onchange="setDRPFlag('${escHtml(sym)}','fractional',this.checked);renderOwnershipGrid()">
+          <span style="color:${drpFrac?'var(--blue)':'var(--text3)'};font-family:var(--mono)">Fractional</span>
+        </label>` : ''}
+      </div>
     </div>`;
   }).join('');
 }
@@ -8576,7 +8618,7 @@ function renderDivCheckResults(results) {
     <div class="fs">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
         <div class="fst">Expected Dividends</div>
-        <button class="btn btn-r" onclick="document.getElementById('div-check-panel').style.display='none'">✕ Close</button>
+        <button class="btn btn-r" onclick="document.getElementById('div-check-panel').style.display='none';const dp=document.getElementById('drp-tab-panel');if(dp)dp.style.display='none';">✕ Close</button>
       </div>
 
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-bottom:16px">
@@ -8691,6 +8733,279 @@ function addAllMissingDivs() {
   window._missingDivs = [];
   renderDividends(); renderDivCharts(); renderDivCards();
   document.getElementById('div-check-panel').style.display = 'none';
+  const _dp=document.getElementById('drp-tab-panel');if(_dp)_dp.style.display='none';
+}
+
+
+// ═══════════════════════════════════════════════════════════════
+// DRP PROCESSING ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+function processDRP(){
+  const drpSettings = getDRPSettings();
+  const enabledSyms = Object.entries(drpSettings)
+    .filter(([,s]) => s.enabled)
+    .map(([sym]) => sym);
+
+  if(!enabledSyms.length){
+    notify('No symbols have DRP enabled. Enable DRP in the Stock Ownership section above.','err');
+    return;
+  }
+
+  // 6-month lookback window
+  const cutoff = new Date();
+  cutoff.setMonth(cutoff.getMonth() - 6);
+  const cutoffStr = cutoff.toISOString().slice(0,10);
+
+  const carry   = getDRPCarry();
+  const pending = []; // items ready for user confirmation
+
+  for(const sym of enabledSyms){
+    const settings = drpSettings[sym];
+    const fractional = settings.fractional || false;
+
+    // Find unprocessed dividends for this symbol in last 6 months
+    // "Unprocessed" = no DRP buy trade within 7 days of the dividend date
+    const symDivs = dividends
+      .filter(d => d.symbol === sym && d.date >= cutoffStr && d.type !== 'drp')
+      .sort((a,b) => a.date.localeCompare(b.date));
+
+    for(const div of symDivs){
+      // Check: is there already a DRP trade close to this dividend?
+      const divDate = new Date(div.date);
+      const already = trades.some(t => {
+        if(t.symbol !== sym || t.type !== 'drp') return false;
+        const diff = Math.abs(new Date(t.date) - divDate);
+        return diff <= 35 * 24*60*60*1000; // within 35 days
+      });
+      if(already) continue; // already processed
+
+      // Get current market price for DRP price pre-fill
+      const mktPrice = prices[priceSymbol(sym)] || 0;
+
+      // Get carry-forward
+      const carryAmt = carry[sym] || 0;
+      const total    = +(+div.amount + carryAmt).toFixed(4);
+
+      pending.push({
+        sym,
+        divId:     div.id,
+        divDate:   div.date,
+        divAmount: +div.amount,
+        carryIn:   carryAmt,
+        total,
+        price:     mktPrice,   // user can override
+        fractional,
+        // calculated fields filled in renderDRPPanel()
+      });
+    }
+  }
+
+  if(!pending.length){
+    const panel = $('drp-process-panel');
+    if(panel){
+      panel.style.display = 'block';
+      panel.innerHTML = `<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;
+        background:var(--surface);border-radius:6px;border:1px solid var(--border)">
+        <span style="color:var(--green);font-size:16px">✓</span>
+        <span style="font-size:12px;color:var(--text2)">DRP: nothing to process — all recent dividends for DRP-enabled symbols are handled.</span>
+      </div>`;
+    }
+    return;
+  }
+
+  window._drpPending = pending;
+  renderDRPPanel();
+}
+
+function calcDRPUnits(total, price, fractional){
+  if(!price || price <= 0) return { units: 0, carryOut: total };
+  if(fractional){
+    const units = +(total / price).toFixed(6);
+    return { units, carryOut: 0 };
+  } else {
+    const units = Math.floor(total / price);
+    const carryOut = +(total - units * price).toFixed(4);
+    return { units, carryOut };
+  }
+}
+
+function renderDRPPanel(){
+  const panel = $('drp-tab-panel') || $('drp-process-panel');
+  if(!panel) return;
+  panel.style.display = 'block';
+  const pending = window._drpPending || [];
+  if(!pending.length){ panel.innerHTML = ''; return; }
+
+  const rows = pending.map((p, idx) => {
+    const { units, carryOut } = calcDRPUnits(p.total, p.price, p.fractional);
+    const canProcess = p.price > 0 && units > 0;
+    return `
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:10px"
+         id="drp-item-${idx}">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-family:var(--mono);font-size:14px;font-weight:700;color:var(--gold)">${escHtml(p.sym)}</span>
+        <span style="font-size:11px;color:var(--text3)">${p.divDate}</span>
+        <span style="font-size:11px;color:var(--text3)">
+          Dividend: ${n2(p.divAmount)}
+          ${p.carryIn > 0.005 ? ' + ' + n2(p.carryIn) + ' carry-in' : ''}
+          = <strong style="color:var(--text)">${n2(p.total)}</strong> available
+        </span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <div>
+          <label style="font-size:10px;color:var(--text3);display:block;margin-bottom:3px">DRP PRICE (AUD)</label>
+          <input type="number" class="fi" step="any" min="0"
+            value="${p.price > 0 ? p.price.toFixed(4) : ''}"
+            placeholder="Enter DRP price"
+            style="width:130px;padding:5px 8px;font-family:var(--mono)"
+            oninput="window._drpPending[${idx}].price=parseFloat(this.value)||0;updateDRPRow(${idx})">
+        </div>
+        <div style="font-family:var(--mono);font-size:12px;padding-bottom:6px">
+          <div id="drp-calc-${idx}" style="color:${canProcess?'var(--text)':'var(--text3)'}">
+            ${canProcess
+              ? `<span style="color:var(--green)">▶ ${p.fractional ? units.toFixed(6) : units} units</span>
+                 ${carryOut > 0.005 ? '<span style="color:var(--text3)"> · carry: ' + n2(carryOut) + '</span>' : '<span style="color:var(--green)"> · fully reinvested</span>'}` 
+              : 'Enter price to calculate'}
+          </div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:8px">
+          ${canProcess
+            ? `<button class="btn btn-g" style="padding:5px 14px;font-size:12px"
+                onclick="confirmDRPItem(${idx})">✓ Confirm</button>` : ''}
+          <button class="btn" style="padding:5px 10px;font-size:12px;color:var(--text3)"
+            onclick="skipDRPItem(${idx})">Skip</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const hasAny = pending.some(p => p.price > 0 && calcDRPUnits(p.total, p.price, p.fractional).units > 0);
+
+  panel.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+      <div class="fst" style="margin:0">📈 DRP Processing</div>
+      <button class="btn btn-r" onclick="const dp=$('drp-tab-panel');if(dp){dp.style.display='none';dp.innerHTML='';}">✕ Close</button>
+    </div>
+    <div style="font-size:12px;color:var(--text3);margin-bottom:10px">
+      <strong style="color:var(--text)">\${pending.length}</strong> unprocessed dividend\${pending.length!==1?'s':''} found.
+      Review each, adjust the DRP price if needed, then confirm.
+    </div>
+    ${rows}
+    ${hasAny ? `<button class="btn" onclick="confirmAllDRP()"
+      style="background:var(--gold);color:#000;font-weight:700;margin-top:4px">
+      ⚡ Confirm All</button>` : ''}
+  `;
+}
+
+function updateDRPRow(idx){
+  const p = window._drpPending[idx];
+  const { units, carryOut } = calcDRPUnits(p.total, p.price, p.fractional);
+  const el = $(`drp-calc-${idx}`);
+  if(!el) return;
+  const canProcess = p.price > 0 && units > 0;
+  el.innerHTML = canProcess
+    ? `<span style="color:var(--green)">▶ ${p.fractional ? units.toFixed(6) : units} units</span>
+       ${carryOut > 0.005 ? '<span style="color:var(--text3)"> · carry: ' + n2(carryOut) + '</span>' : '<span style="color:var(--green)"> · fully reinvested</span>'}`
+    : (p.price > 0 ? '<span style="color:var(--text3)">Price too low to buy even 1 unit</span>' : 'Enter price to calculate');
+
+  // Re-render confirm button area
+  renderDRPPanel();
+}
+
+function confirmDRPItem(idx){
+  const p = window._drpPending[idx];
+  if(!p){ notify('Item not found.','err'); return; }
+  const { units, carryOut } = calcDRPUnits(p.total, p.price, p.fractional);
+  if(units <= 0){ notify('No units to buy — check the DRP price.','err'); return; }
+
+  // Add the DRP buy trade
+  trades.push({
+    id:        uid(),
+    type:      'drp',
+    symbol:    p.sym,
+    date:      p.divDate,
+    units:     +units.toFixed(p.fractional ? 6 : 0),
+    price:     +p.price.toFixed(4),
+    fees:      0,
+    assetType: getSymbolAssetType(p.sym),
+    notes:     'DRP — auto from dividend ' + p.divDate,
+  });
+
+  // Update carry-forward
+  const carry = getDRPCarry();
+  carry[p.sym] = carryOut;
+  saveDRPCarry(carry);
+
+  save();
+  renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics();
+
+  notify(`✓ DRP: ${p.sym} — ${p.fractional ? units.toFixed(6) : units} units @ ${n2(p.price)} · carry: ${n2(carryOut)}`,'ok');
+
+  // Remove from pending
+  window._drpPending.splice(idx, 1);
+  renderDRPPanel();
+}
+
+function skipDRPItem(idx){
+  window._drpPending.splice(idx, 1);
+  renderDRPPanel();
+  notify('DRP item skipped.','ok');
+}
+
+function confirmAllDRP(){
+  const pending = [...(window._drpPending || [])];
+  let confirmed = 0;
+  const carry = getDRPCarry();
+
+  for(const p of pending){
+    const { units, carryOut } = calcDRPUnits(p.total, p.price, p.fractional);
+    if(p.price <= 0 || units <= 0) continue;
+
+    trades.push({
+      id:        uid(),
+      type:      'drp',
+      symbol:    p.sym,
+      date:      p.divDate,
+      units:     +units.toFixed(p.fractional ? 6 : 0),
+      price:     +p.price.toFixed(4),
+      fees:      0,
+      assetType: getSymbolAssetType(p.sym),
+      notes:     'DRP — auto from dividend ' + p.divDate,
+    });
+    carry[p.sym] = carryOut;
+    confirmed++;
+  }
+
+  saveDRPCarry(carry);
+  save();
+  window._drpPending = [];
+  renderT(); renderH(); renderR(); if(typeof renderAnalytics==='function') renderAnalytics();
+  renderDRPPanel();
+  notify(`✓ DRP: ${confirmed} trade${confirmed!==1?'s':''} added`,'ok');
+}
+
+function getSymbolAssetType(sym){
+  // Get assetType from most recent buy trade for this symbol
+  const t = trades.filter(x => x.symbol===sym && (x.type==='buy'||x.type==='drp'))
+                  .sort((a,b) => b.date.localeCompare(a.date))[0];
+  return t ? t.assetType : 'stock';
+}
+
+
+// ── Combined Check + Process button ─────────────────────────────────────────
+async function checkAndProcessDividends(){
+  // Hide both panels first
+  const checkPanel = $('div-check-panel');
+  const drpPanel   = $('drp-tab-panel');
+  if(checkPanel){ checkPanel.style.display = 'none'; checkPanel.innerHTML = ''; }
+  if(drpPanel)  { drpPanel.style.display   = 'none'; drpPanel.innerHTML   = ''; }
+
+  // Run dividend check (populates div-check-panel)
+  await checkExpectedDividends();
+
+  // Run DRP processing (populates drp-tab-panel)
+  processDRP();
 }
 
 </script>
