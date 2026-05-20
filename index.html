@@ -700,7 +700,7 @@ break;case"<bookViews":;case"<bookViews>":;case"</bookViews>":break;case"<workbo
       <div class="fgi"><label class="fl">Weekly Rent Income (AUD)</label><input class="fi" type="number" id="pf-rent" placeholder="0 if PPOR" step="any" min="0" oninput="calcPropPreview()"></div>
       <div class="fgi"><label class="fl">Annual Property Expenses (AUD)
         <span style="font-size:10px;color:var(--text3)"> — auto-filled from Tax tab</span>
-      </label><input class="fi" type="number" id="pf-expenses" placeholder="rates, insurance, mgmt…" step="any" min="0"></div>
+      </label><input class="fi" type="text" inputmode="text" id="pf-expenses" placeholder="rates, insurance, mgmt… or +/-" onfocus="mathInpInit(this)" oninput="mathInpInput(this)" onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>{this.value=v;calcPropPreview();});}" onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';;mathInpHint(this);}" onblur="mathInpHint(this);calcPropPreview();"></div>
       <div class="fgi"><label class="fl">Property Manager?</label>
         <select class="fi" id="pf-mgr"><option value="no">Self-managed</option><option value="yes">Property Manager</option></select>
       </div>
@@ -2253,7 +2253,7 @@ function addTrade(){
   const fees=parseFloat($('ffe').value)||0;
   const source=$('fso').value;
   const notes=$('fno').value.trim();
-  if(!date||!sym||isNaN(units)||isNaN(price)||units<=0||price<=0){notify('Fill date, symbol, units and price.','err');return;}
+  if(!date||!sym||isNaN(units)||isNaN(price)||units<=0||price<0){notify('Fill date, symbol, units and price.','err');return;}
   if(units<=0){notify('Units must be greater than zero.','err');return;}
   if((side==='buy'||side==='sell')&&price<0){notify('Price cannot be negative.','err');return;}
   const newTrade = {date,type:side,symbol:sym,assetType:at,units,price,fees,source,notes,id:uid()};
@@ -2261,7 +2261,7 @@ function addTrade(){
     if(!confirm('A trade with the same date, symbol, type, units and price already exists. Add anyway?')) return;
   }
   trades.push(newTrade);
-  save(); clearForm(); renderR(); renderH(); renderT();
+  save(); clearForm(); renderR(); renderH(); renderT(); if(typeof renderAnalytics==='function') renderAnalytics();
   notify(`Added: ${side.toUpperCase()} ${nN(units,4)} ${sym} @ ${n2(price,dec(price))}`);
 }
 function clearForm(){['fsy','fun','fpr','fno'].forEach(id=>$(id).value='');$('ffe').value='0';$('fpv').textContent='';}
@@ -5569,6 +5569,8 @@ function applyRemoteData(remote){
   try { renderSpending(); } catch(e){}
   try { renderTax(); } catch(e){}
   try { renderOwnershipGrid(); } catch(e){}
+  // Clear revert buttons after sync pull (user confirmed remote data is source of truth)
+  if(typeof mathInpClearAllReverts==='function') mathInpClearAllReverts();
 }
 
 function syncResolve(choice){
@@ -6665,8 +6667,16 @@ function spNormaliseDate(dateStr){
     if(!isNaN(d)) return d.toISOString().slice(0,10);
   }
   if(/^\d{1,2}\/\d{1,2}\/\d{2,4}$/.test(dateStr)){
-    const [dd,mm,yy] = dateStr.split('/');
+    let [p1,p2,yy] = dateStr.split('/');
     const yyyy = yy.length===2 ? '20'+yy : yy;
+    let dd = p1, mm = p2;
+    // If p2 > 12 it cannot be a month — must be MM/DD (US format): swap
+    if(parseInt(p2,10) > 12){ dd = p2; mm = p1; }
+    // Validate — if month still > 12 after swap, fall through to native parser
+    if(parseInt(mm,10) > 12){
+      const d = new Date(dateStr);
+      return isNaN(d) ? null : d.toISOString().slice(0,10);
+    }
     return `${yyyy}-${mm.padStart(2,'0')}-${dd.padStart(2,'0')}`;
   }
   const d = new Date(dateStr);
@@ -7205,9 +7215,9 @@ function csvImport(type, input){
 
 // Parse CSV text → array of {header: value} objects
 function csvParseRows(text){
-  const lines = text.split(/\r?\n/).filter(l => l.trim());
+  const lines = text.replace(/^\uFEFF/,'').split(/\r?\n/).filter(l => l.trim());
   if(lines.length < 2) return [];
-  const headers = csvSplitLine(lines[0]).map(h => h.trim().toLowerCase().replace(/\s+/g,'_'));
+  const headers = csvSplitLine(lines[0]).map(h => h.trim().toLowerCase().replace(/[\uFEFF]/g,'').replace(/\s+/g,'_'));
   const rows = [];
   for(let i = 1; i < lines.length; i++){
     const vals = csvSplitLine(lines[i]);
@@ -8141,12 +8151,20 @@ function renderTax(){
     const share = p.owner==='joint'?0.5:1;
     const pRec = rec.props[p.id] || {};
     const ownerLabel = {lumia:'Lumia',chilli:'Chilli',joint:'Joint 50/50'}[p.owner||'lumia']||'Lumia';
-    const fi = (field,label,placeholder) =>
-      `<div><label style="font-size:10px;color:var(--text3)">${label}</label>
-       <input type="number" class="fi tax-prop-inp" style="padding:3px 6px"
+    const fi = (field,label,placeholder) => {
+      const fid = `tp-${p.id}-${field}-${fy}`;
+      return `<div style="position:relative"><label style="font-size:10px;color:var(--text3)">${label}</label>
+       <input type="text" inputmode="text" class="fi tax-prop-inp" style="padding:3px 6px" id="${fid}"
          data-propid="${p.id}" data-field="${field}" data-fy="${fy}"
-         placeholder="${placeholder}" value="${pRec[field]||''}"
-         oninput="taxPropUpdate(this)" onblur="renderTax()"></div>`;
+         data-prior="${pRec[field]||0}" data-committed="${pRec[field]||0}"
+         placeholder="${placeholder} or +450" value="${pRec[field]||''}"
+         onfocus="mathInpInit(this)"
+         oninput="mathInpInput(this)"
+         onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();this._saveFn=v=>{taxPropUpdate2(this,v);};mathInpCommit(this,this._saveFn);if(event.key==='Tab'){const n=this.closest('div').nextElementSibling?.querySelector('input');if(n)n.focus();}}"
+         onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/)){taxPropUpdate2(this,parseFloat(this.value)||0);renderTax();}"
+         onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+       ></div>`;
+    };
     // Compute live rental summary for this property for diagnostic display
     const _m = propMetrics(p);
     const _annRent = (p.weeklyRent||0)*52*share;
@@ -8209,13 +8227,21 @@ function renderTax(){
         <div style="font-family:var(--mono);font-size:13px;font-weight:600;color:${col};margin-bottom:12px">${name}</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
           <div><label class="fl">Gross Salary (AUD)</label>
-            <input type="number" class="fi" style="padding:4px 8px"
-              placeholder="e.g. 85000" value="${pRec.salary||''}"
-              oninput="taxInpSave('${person}','salary',+this.value,${fy})" onblur="renderTax()"></div>
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 85000 or +/-" value="${pRec.salary||''}" id="ti-${person}-salary-${fy}" data-prior="${pRec.salary||0}" data-committed="${pRec.salary||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','salary',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','salary',parseFloat(this.value)||0,${fy});"></div>
           <div><label class="fl">Tax Withheld (PAYG)</label>
-            <input type="number" class="fi" style="padding:4px 8px"
-              placeholder="e.g. 22000" value="${pRec.withheld||''}"
-              oninput="taxInpSave('${person}','withheld',+this.value,${fy})" onblur="renderTax()">
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 22000 or +/-" value="${pRec.withheld||''}" id="ti-${person}-withheld-${fy}" data-prior="${pRec.withheld||0}" data-committed="${pRec.withheld||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','withheld',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','withheld',parseFloat(this.value)||0,${fy});">
             ${(()=>{
               const s = +pRec.salary||0;
               const w = +pRec.withheld||0;
@@ -8227,16 +8253,24 @@ function renderTax(){
             })()}
             </div>
           <div><label class="fl">PAYG Instalments</label>
-            <input type="number" class="fi" style="padding:4px 8px"
-              placeholder="e.g. 0" value="${pRec.payg||''}"
-              oninput="taxInpSave('${person}','payg',+this.value,${fy})" onblur="renderTax()"></div>
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 0 or +/-" value="${pRec.payg||''}" id="ti-${person}-payg-${fy}" data-prior="${pRec.payg||0}" data-committed="${pRec.payg||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','payg',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','payg',parseFloat(this.value)||0,${fy});"></div>
           <div style="grid-column:1/-1">
             <label class="fl">Salary Sacrifice to Super
               <span style="color:var(--text3);font-size:10px">(pre-tax · reduces taxable income)</span>
             </label>
-            <input type="number" class="fi" style="padding:4px 8px"
-              placeholder="e.g. 10000 — leave blank if none" value="${pRec.sacrifice||''}"
-              oninput="taxInpSave('${person}','sacrifice',+this.value,${fy})" onblur="renderTax()">
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 10000 — leave blank if none or +/-" value="${pRec.sacrifice||''}" id="ti-${person}-sacrifice-${fy}" data-prior="${pRec.sacrifice||0}" data-committed="${pRec.sacrifice||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','sacrifice',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','sacrifice',parseFloat(this.value)||0,${fy});">
             ${+pRec.sacrifice>0?`<div style="font-size:10px;color:var(--pos);margin-top:3px">✓ Reduces taxable income by ${n2(+pRec.sacrifice)}</div>`:''}
           </div>
           <div style="grid-column:1/-1">
@@ -8245,9 +8279,13 @@ function renderTax(){
                 `<span style="color:var(--neg);font-family:var(--mono);font-size:10px;margin-left:8px">est. repayment ${n2(calcHECS(+pRec.salary,+pRec.hecs))}/yr</span>`:
                 `<span style="color:var(--text3);font-size:10px;margin-left:8px">enter salary + balance to estimate</span>`}
             </label>
-            <input type="number" class="fi" style="padding:4px 8px"
-              placeholder="e.g. 28000 — leave blank if none" value="${pRec.hecs||''}"
-              oninput="taxInpSave('${person}','hecs',+this.value,${fy})" onblur="renderTax()">
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 28000 — leave blank if none or +/-" value="${pRec.hecs||''}" id="ti-${person}-hecs-${fy}" data-prior="${pRec.hecs||0}" data-committed="${pRec.hecs||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','hecs',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','hecs',parseFloat(this.value)||0,${fy});">
           </div>
           <div style="grid-column:1/-1;margin-top:6px;padding:8px 10px;
                background:rgba(255,255,255,0.03);border-radius:5px;border:1px solid var(--border)">
@@ -8434,6 +8472,18 @@ function taxRecUpdate(field, val, fy){
   renderTax();
 }
 
+function taxPropUpdate2(inp, val){
+  const propId = inp.dataset.propid;
+  const field  = inp.dataset.field;
+  const fy     = +inp.dataset.fy;
+  const k = taxKey(fy);
+  if(!taxData[k]) getTaxRecord(fy);
+  if(!taxData[k].props) taxData[k].props = {};
+  if(!taxData[k].props[propId]) taxData[k].props[propId] = {};
+  taxData[k].props[propId][field] = val;
+  saveTaxData();
+  renderTax();
+}
 function taxPropUpdate(inp){
   const propId = inp.dataset.propid;
   const field  = inp.dataset.field;
@@ -9064,6 +9114,180 @@ async function checkAndProcessDividends(){
 
   // Run DRP processing (populates drp-tab-panel)
   processDRP();
+}
+
+
+// ═══════════════════════════════════════════════════════════════════════════
+// MATH INPUT — +/- arithmetic on numeric fields
+// Usage: type "+450" or "-200" in any .math-inp field
+//   Tab/Enter → resolves and saves
+//   Escape    → reverts to prior value
+//   While typing: shows a preview hint below the field
+// Revert button disappears after next sync pull.
+// ═══════════════════════════════════════════════════════════════════════════
+
+function mathInpInit(el){
+  // Sync prior to current value on focus
+  const cur = el.value || '0';
+  el.dataset.prior     = cur;
+  el.dataset.committed = el.dataset.committed && el.dataset.committed !== '0' ? el.dataset.committed : cur;
+  // Select all text so typing '+450' replaces the whole value cleanly
+  // Without this, cursor lands mid-field and '+450' appends → '1350+450' → broken
+  setTimeout(() => el.select(), 0);
+  mathInpHint(el);
+}
+
+function mathInpInput(el){
+  const raw = el.value.trim();
+  const prior = parseFloat(el.dataset.prior) || 0;
+
+  // Detect arithmetic prefix
+  const m = raw.match(/^([+\-])(\s*)([\d]*\.?[\d]*)$/);
+  if(m && m[3] !== ''){
+    const op  = m[1];
+    const num = parseFloat(m[3]);
+    if(!isNaN(num)){
+      const result = op === '+' ? prior + num : prior - num;
+      mathInpShowHint(el, prior, op, num, result);
+      return;
+    }
+  }
+  mathInpHint(el); // plain number or incomplete — hide hint
+}
+
+function mathInpShowHint(el, prior, op, num, result){
+  let hint = document.getElementById('math-hint-' + el.id);
+  if(!hint){
+    hint = document.createElement('div');
+    hint.id = 'math-hint-' + el.id;
+    hint.style.cssText = [
+      'position:absolute;z-index:200',
+      'background:var(--surface)',
+      'border:1px solid var(--gold)',
+      'border-radius:5px',
+      'padding:5px 10px',
+      'font-family:var(--mono)',
+      'font-size:11px',
+      'color:var(--text)',
+      'white-space:nowrap',
+      'box-shadow:0 2px 8px rgba(0,0,0,.35)',
+      'pointer-events:none',
+    ].join(';');
+    const wrap = el.parentElement;
+    wrap.style.position = 'relative';
+    wrap.appendChild(hint);
+  }
+  const sign = op === '+' ? '+' : '−';
+  const col  = result < 0 ? 'var(--red)' : 'var(--green)';
+  hint.innerHTML =
+    `<span style="color:var(--text3)">$${prior.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`
+    + ` <span style="color:var(--gold)">${sign}$${num.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`
+    + ` = <span style="color:${col};font-weight:700">$${result.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2})}</span>`;
+  hint.style.display = 'block';
+}
+
+function mathInpHint(el){
+  const hint = document.getElementById('math-hint-' + el.id);
+  if(hint) hint.style.display = 'none';
+}
+
+function mathInpCommit(el, saveFn){
+  const raw    = el.value.trim();
+  const prior  = parseFloat(el.dataset.prior) || 0;
+  let   result = null;
+
+  const m = raw.match(/^([+\-])\s*([\d]*\.?[\d]+)$/);
+  if(m){
+    const num = parseFloat(m[2]);
+    if(!isNaN(num)){
+      result = m[1] === '+' ? prior + num : prior - num;
+      result = Math.max(0, +result.toFixed(2));
+    }
+  } else {
+    const plain = parseFloat(raw);
+    if(!isNaN(plain)) result = Math.max(0, +plain.toFixed(2));
+  }
+
+  if(result === null){
+    // Can't parse — revert
+    el.value = el.dataset.prior;
+    mathInpHint(el);
+    return;
+  }
+
+  const oldCommitted = el.dataset.committed;
+
+  // Only do something if value actually changed
+  if(result !== parseFloat(oldCommitted)){
+    // Store old committed for revert button
+    el.dataset.revertTo = oldCommitted;
+    el.dataset.committed = String(result);
+    el.dataset.prior = String(result);
+    el.value = result;
+    mathInpHint(el);
+
+    // Show revert button
+    mathInpShowRevert(el);
+  } else {
+    el.value = result;
+    mathInpHint(el);
+  }
+
+  // Call the provided save function
+  if(saveFn) saveFn(result);
+}
+
+function mathInpRevert(el, saveFn){
+  const prev = parseFloat(el.dataset.revertTo);
+  if(isNaN(prev)) return;
+  el.value = prev;
+  el.dataset.committed = String(prev);
+  el.dataset.prior = String(prev);
+  mathInpHideRevert(el);
+  mathInpHint(el);
+  if(saveFn) saveFn(prev);
+}
+
+function mathInpShowRevert(el){
+  const id = 'math-revert-' + el.id;
+  let btn = document.getElementById(id);
+  if(!btn){
+    btn = document.createElement('button');
+    btn.id = id;
+    btn.style.cssText = [
+      'position:absolute;right:0;top:-18px',
+      'background:var(--surface2)',
+      'border:1px solid var(--border)',
+      'border-radius:3px',
+      'color:var(--text3)',
+      'font-size:9px',
+      'font-family:var(--mono)',
+      'padding:1px 5px',
+      'cursor:pointer',
+      'white-space:nowrap',
+      'z-index:201',
+    ].join(';');
+    const wrap = el.parentElement;
+    wrap.style.position = 'relative';
+    wrap.appendChild(btn);
+  }
+  const prev = parseFloat(el.dataset.revertTo);
+  btn.textContent = '↩ revert to $' + prev.toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  btn.style.display = 'inline-block';
+  // The onclick is set dynamically in the callers via data-revertfn
+  btn.onclick = function(){ mathInpRevert(el, el._saveFn); };
+}
+
+function mathInpHideRevert(el){
+  const btn = document.getElementById('math-revert-' + el.id);
+  if(btn) btn.style.display = 'none';
+}
+
+// Called after sync pull to clear all revert buttons
+function mathInpClearAllReverts(){
+  document.querySelectorAll('[id^="math-revert-"]').forEach(btn => {
+    btn.style.display = 'none';
+  });
 }
 
 </script>
