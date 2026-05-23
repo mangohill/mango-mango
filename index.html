@@ -8105,13 +8105,22 @@ function renderTax(){
     const investInterestDeduction = propPnLResult.investInterest || 0;
     const taxableIncome = (salary - sacrifice) + myDiv + myFrank - investInterestDeduction + netPropGain - netPropLoss + myCGT;
     const grossTax  = calcTax(Math.max(0, taxableIncome));
+    // Medicare levy (2% — already baked into calcTax, extracted here for display)
+    const medicareLevy = Math.max(0, taxableIncome) > 26000
+      ? Math.round(Math.max(0, taxableIncome) * 0.02 * 100) / 100 : 0;
     const hecsRep   = calcHECS(Math.max(0, taxableIncome), hecsDebt);
     // Division 293: extra 15% tax on concessional contributions if income > $250,000
     // Concessional contributions = employer SG (est. 12% of salary) + salary sacrifice
-    const sgRate       = 0.120;  // SG rate FY2025/26 (12% from 1 Jul 2025)
-    const empSuper     = salary * sgRate;
+    // SG rate: FY-aware (11.5% to Jun 2025, 12% from Jul 2025)
+    const sgRate       = fy >= 2026 ? 0.120 : 0.115;
+    // Use manual empSG if entered, else estimate from salary × sgRate
+    const empSGManual  = +p.empSG || 0;
+    const empSuper     = empSGManual > 0 ? empSGManual : salary * sgRate;
     const totalConcess = empSuper + sacrifice;
-    const div293Income = taxableIncome + totalConcess;  // income for Div293 purposes
+    // Div293 income = taxable income + reportable employer super contributions
+    // (salary sacrifice is already in taxableIncome as a deduction so add back;
+    //  employer SG counted as it's a concessional contribution)
+    const div293Income    = taxableIncome + totalConcess;
     const div293Threshold = 250000;
     let div293 = 0;
     if(div293Income > div293Threshold && totalConcess > 0){
@@ -8133,11 +8142,10 @@ function renderTax(){
     const totalLiability = grossTax + hecsRep + mls + div293;
     const netTax    = Math.max(0, totalLiability - withheld - payg - myFrank);
     const refund    = Math.max(0, withheld + payg + myFrank - totalLiability);
-    return { salary, withheld, payg, sacrifice, myDiv, myFrank, investInterestDeduction,
+    return { salary, withheld, payg, sacrifice, myDiv, myFrank, investInterestDeduction, empSGManual, empSuper, sgRate, totalConcess, div293Income, div293Threshold:250000, medicareLevy,
              netPropLoss, netPropGain, netRent, netExpenses,
-             myCGT, taxableIncome, grossTax, hecsRep, mls, div293,
-             totalLiability, netTax, refund, hecsDebt, hasPrivH,
-             empSuper, totalConcess, div293Income };
+             myCGT, taxableIncome, grossTax, medicareLevy, hecsRep, mls, div293,
+             totalLiability, netTax, refund, hecsDebt, hasPrivH };
   }
 
   const lumProp   = propPnL('lumia');
@@ -8287,6 +8295,20 @@ function renderTax(){
               onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
               onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','hecs',parseFloat(this.value)||0,${fy});">
           </div>
+          <div style="grid-column:1/-1">
+            <label class="fl">Employer Super (SG)
+              <span style="color:var(--text3);font-size:10px;margin-left:8px">
+                leave blank to use estimated ${(()=>{const fyN=+fy;return fyN>=2027?'12':fyN>=2026?'12':'11.5';})()}% SG
+              </span>
+            </label>
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 11500 — or leave blank for auto-calc" value="${pRec.empSG||''}" id="ti-${person}-empSG-${fy}" data-prior="${pRec.empSG||0}" data-committed="${pRec.empSG||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','empSG',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','empSG',parseFloat(this.value)||0,${fy});">
+          </div>
           <div style="grid-column:1/-1;margin-top:6px;padding:8px 10px;
                background:rgba(255,255,255,0.03);border-radius:5px;border:1px solid var(--border)">
             <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer">
@@ -8362,8 +8384,16 @@ function renderTax(){
       </tr></thead>
       <tbody>
         ${row('Gross Salary',n2(lumTax.salary),n2(chiTax.salary))}
-        ${row('Dividend Income (cash)',n2(lumTax.myDiv),n2(chiTax.myDiv),'','from dividends tab')}
-        ${row('Franking Credits','+'+n2(lumTax.myFrank),'+'+n2(chiTax.myFrank),'pos')}
+        ${`<tr>
+          <td style='color:var(--text3);font-size:12px;padding:5px 8px'>Dividend Income (cash)<span style='color:var(--text3);font-size:10px'> from dividends tab</span></td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;cursor:pointer;text-decoration:underline dotted;color:var(--green)' onclick='taxDrillDividends("lumia",${fy})' title='Click to see these dividends'>${n2(lumTax.myDiv)}</td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;cursor:pointer;text-decoration:underline dotted;color:var(--green)' onclick='taxDrillDividends("chilli",${fy})' title='Click to see these dividends'>${n2(chiTax.myDiv)}</td>
+        </tr>`}
+        ${`<tr class='pos'>
+          <td style='color:var(--text3);font-size:12px;padding:5px 8px'>Franking Credits</td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;cursor:pointer;text-decoration:underline dotted' onclick='taxDrillDividends("lumia",${fy})' title='Click to see franked dividends'>+${n2(lumTax.myFrank)}</td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;cursor:pointer;text-decoration:underline dotted' onclick='taxDrillDividends("chilli",${fy})' title='Click to see franked dividends'>+${n2(chiTax.myFrank)}</td>
+        </tr>`}
         ${(lumTax.investInterestDeduction>0||chiTax.investInterestDeduction>0)?row(
           'Investment Interest Deduction',
           lumTax.investInterestDeduction>0?'-'+n2(lumTax.investInterestDeduction):'—',
@@ -8388,6 +8418,10 @@ function renderTax(){
           lumTax.sacrifice>0?'-'+n2(lumTax.sacrifice):'—',
           chiTax.sacrifice>0?'-'+n2(chiTax.sacrifice):'—','neg','reduces taxable income'):''}
         ${row('Gross Tax Payable',n2(lumTax.grossTax),n2(chiTax.grossTax))}
+        ${row('  └ Medicare Levy (2%)',
+          lumTax.medicareLevy>0?n2(lumTax.medicareLevy):'—',
+          chiTax.medicareLevy>0?n2(chiTax.medicareLevy):'—',
+          'neg','included in gross tax above')}
         ${row('Effective Tax Rate',
           lumTax.taxableIncome>0 ? (lumTax.grossTax/lumTax.taxableIncome*100).toFixed(1)+'%' : '—',
           chiTax.taxableIncome>0 ? (chiTax.grossTax/chiTax.taxableIncome*100).toFixed(1)+'%' : '—',
@@ -8398,9 +8432,31 @@ function renderTax(){
           chiTax.salary>0 ? (chiTax.withheld/chiTax.salary*100).toFixed(1)+'%' : '—',
           '','% of gross salary withheld by employer'
         )}
-        ${lumTax.div293>0||chiTax.div293>0?row('Division 293 Tax',
-          lumTax.div293>0?n2(lumTax.div293):'—',
-          chiTax.div293>0?n2(chiTax.div293):'—','neg','extra 15% on super · income >$250k'):''}
+${(()=>{
+          if(!lumTax.div293&&!chiTax.div293) return '';
+          // Store breakdown data for popup (avoids JSON.stringify in onclick)
+          window.__div293 = window.__div293 || {};
+          window.__div293['lumia']  = {...lumTax,  personLabel: getPersonLabel('lumia')};
+          window.__div293['chilli'] = {...chiTax, personLabel: getPersonLabel('chilli')};
+          return `<tr class='neg'>
+          <td style='color:var(--text3);font-size:12px;padding:5px 8px'>
+            Division 293 Tax
+            <span style='color:var(--text3);font-size:10px'> extra 15% on super · income &gt;$250k</span>
+          </td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;
+            ${lumTax.div293>0?'cursor:pointer;text-decoration:underline dotted':''}'
+            onclick='${lumTax.div293>0?'showDiv293Breakdown(\'lumia\')':''}'
+            title='${lumTax.div293>0?'Click to see calculation':''}'>
+            ${lumTax.div293>0?n2(lumTax.div293):'—'}
+          </td>
+          <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;
+            ${chiTax.div293>0?'cursor:pointer;text-decoration:underline dotted':''}'
+            onclick='${chiTax.div293>0?'showDiv293Breakdown(\'chilli\')':''}'
+            title='${chiTax.div293>0?'Click to see calculation':''}'>
+            ${chiTax.div293>0?n2(chiTax.div293):'—'}
+          </td>
+        </tr>`;
+        })()}
       ${(lumTax.hecsRep>0||chiTax.hecsRep>0)?row('HECS-HELP Repayment',
         lumTax.hecsRep>0?n2(lumTax.hecsRep):'—',
         chiTax.hecsRep>0?n2(chiTax.hecsRep):'—'):''
@@ -9288,6 +9344,134 @@ function mathInpClearAllReverts(){
   document.querySelectorAll('[id^="math-revert-"]').forEach(btn => {
     btn.style.display = 'none';
   });
+}
+
+
+// ── Tax → Dividends drilldown ────────────────────────────────────────────────
+function taxDrillDividends(personKey, fy){
+  // Switch to dividends tab
+  const tabEl = document.querySelector('.tab[onclick*="dividends"]');
+  if(tabEl) switchTab('dividends', tabEl);
+
+  // Set FY filter on the FY bar
+  dvFYFilter = String(fy);
+
+  // Set owner filter
+  const ownerSel = $('dv-owner-filter');
+  if(ownerSel){
+    ownerSel.innerHTML = '<option value="">All Owners</option>' +
+      getAllPersons().concat(['joint']).map(p =>
+        '<option value="' + p + '"' + (p===personKey?' selected':'') + '>' + getPersonLabel(p) + '</option>'
+      ).join('');
+  }
+
+  // Re-render with filters applied
+  if(typeof renderFYBar==='function') renderFYBar();
+  renderDividends();
+  if(typeof renderDivCharts==='function') renderDivCharts();
+  if(typeof renderDivCards==='function') renderDivCards();
+
+  // Scroll dividend history into view
+  setTimeout(function(){
+    const tbl = document.getElementById('dv-body');
+    if(tbl){
+      const t = tbl.closest('table') || tbl;
+      t.scrollIntoView({behavior:'smooth', block:'start'});
+    }
+  }, 200);
+
+  // Flash the FY bar so the user sees what's filtered
+  const fyBar = document.getElementById('dv-fy-bar');
+  if(fyBar){
+    fyBar.style.transition = 'background 0.3s';
+    fyBar.style.background = 'rgba(245,166,35,0.15)';
+    setTimeout(function(){ fyBar.style.background = ''; }, 1400);
+  }
+}
+
+
+// ── Division 293 breakdown popup ─────────────────────────────────────────────
+function showDiv293Breakdown(personKey){
+  const t = (window.__div293 || {})[personKey];
+  if(!t){ notify('Div293 data not available — re-open Tax tab.','err'); return; }
+  // Remove any existing popup
+  const existing = document.getElementById('div293-popup');
+  if(existing){ existing.remove(); return; }
+
+  const n2l = v => '$' + Number(v).toLocaleString('en-AU',{minimumFractionDigits:2,maximumFractionDigits:2});
+  const pct  = v => (v*100).toFixed(1) + '%';
+
+  const sgLabel = t.empSGManual > 0
+    ? 'Employer SG (manual entry)'
+    : 'Employer SG (estimated at ' + pct(t.sgRate) + ' of salary)';
+
+  const excessAmt  = Math.max(0, t.div293Income - t.div293Threshold);
+  const taxableCC  = Math.min(t.totalConcess, excessAmt);
+
+  const popup = document.createElement('div');
+  popup.id = 'div293-popup';
+  popup.style.cssText = [
+    'position:fixed','top:50%','left:50%',
+    'transform:translate(-50%,-50%)',
+    'background:var(--surface)','border:1px solid var(--border)',
+    'border-radius:10px','padding:20px 24px',
+    'z-index:9999','min-width:340px','max-width:95vw',
+    'box-shadow:0 8px 32px rgba(0,0,0,.5)',
+    'font-family:var(--mono)','font-size:12px',
+  ].join(';');
+
+  popup.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <div style="font-size:14px;font-weight:700;color:var(--text)">Division 293 Calculation — ${escHtml(t.personLabel)}</div>
+      <button onclick="document.getElementById('div293-popup').remove()"
+        style="background:none;border:none;color:var(--text3);cursor:pointer;font-size:18px;line-height:1">✕</button>
+    </div>
+    <table style="width:100%;border-collapse:collapse">
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">Taxable Income</td>
+        <td style="text-align:right;color:var(--text)">${n2l(t.taxableIncome)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">${sgLabel}</td>
+        <td style="text-align:right;color:var(--text)">${n2l(t.empSuper)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">Salary Sacrifice</td>
+        <td style="text-align:right;color:var(--text)">${n2l(t.sacrifice)}</td>
+      </tr>
+      <tr style="border-bottom:2px solid var(--border2);font-weight:700">
+        <td style="padding:6px 0;color:var(--text)">Div293 Income</td>
+        <td style="text-align:right;color:var(--text)">${n2l(t.div293Income)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">Threshold</td>
+        <td style="text-align:right;color:var(--text)">$250,000.00</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">Excess over threshold</td>
+        <td style="text-align:right;color:var(--text)">${n2l(excessAmt)}</td>
+      </tr>
+      <tr style="border-bottom:1px solid var(--border)">
+        <td style="padding:5px 0;color:var(--text2)">Taxable contributions (lower of excess or total CC)</td>
+        <td style="text-align:right;color:var(--text)">${n2l(taxableCC)}</td>
+      </tr>
+      <tr style="font-weight:700;background:rgba(255,71,87,.08)">
+        <td style="padding:6px 0;color:var(--red)">Division 293 Tax (15% × ${n2l(taxableCC)})</td>
+        <td style="text-align:right;color:var(--red)">${n2l(t.div293)}</td>
+      </tr>
+    </table>
+    <div style="margin-top:12px;font-size:10px;color:var(--text3)">
+      Div293 = 15% × min(total concessional contributions, income over $250k threshold)
+    </div>`;
+
+  // Dismiss on outside click
+  popup.addEventListener('click', e => e.stopPropagation());
+  document.addEventListener('click', function dismiss(){
+    popup.remove();
+    document.removeEventListener('click', dismiss);
+  });
+
+  document.body.appendChild(popup);
 }
 
 </script>
