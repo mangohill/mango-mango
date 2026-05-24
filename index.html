@@ -8020,7 +8020,11 @@ function renderTax(){
   };
 
   // ── Dividends in FY — attributed by stock ownership ────────────
-  const fyDivs = dividends.filter(d=>inFY(d.date)&&d.type!=='drp');
+  // DRP dividends ARE assessable income (ATO: reinvestment doesn't change taxability)
+  // Include all dividend types: dividend, distribution, drp, interest
+  // Exclude: staking, airdrop (different tax treatment)
+  const fyDivs = dividends.filter(d=>inFY(d.date)&&
+    ['dividend','distribution','drp','interest'].includes(d.type));
   // Build per-person dividend totals based on stock ownership
   function personDivs(personKey){
     return fyDivs.filter(d=>{
