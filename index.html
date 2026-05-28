@@ -8121,10 +8121,16 @@ function renderTax(){
     const empSGManual  = +p.empSG || 0;
     const empSuper     = empSGManual > 0 ? empSGManual : salary * sgRate;
     const totalConcess = empSuper + sacrifice;
-    // Div293 income = taxable income + reportable employer super contributions
-    // (salary sacrifice is already in taxableIncome as a deduction so add back;
-    //  employer SG counted as it's a concessional contribution)
-    const div293Income    = taxableIncome + totalConcess;
+    // RFB: reportable fringe benefits (grossed-up, from income statement)
+    const rfb = +p.rfb || 0;
+    // Total net investment loss (ATO s293-20 / MLS income tests)
+    // = amount by which financial investment deductions exceed investment income
+    // (rental losses are NOT included — they're a separate category)
+    const netInvIncome      = myDiv + myFrank;
+    const totalNetInvLoss   = Math.max(0, investInterestDeduction - netInvIncome);
+    // Div293 income (ATO s293-20):
+    // = taxable income + RFB + reportable employer super + total net investment loss
+    const div293Income    = taxableIncome + rfb + totalConcess + totalNetInvLoss;
     const div293Threshold = 250000;
     let div293 = 0;
     if(div293Income > div293Threshold && totalConcess > 0){
@@ -8139,14 +8145,16 @@ function renderTax(){
     // ATO: family income for MLS includes net rental of both persons
     const otherPropResult = propPnL(otherKey);
     const otherRental  = otherPropResult.netPropGain - otherPropResult.netPropLoss;
-    const otherTI      = (otherSalary - otherSacr) + otherDiv + otherRental;
-    const familyIncome = taxableIncome + otherTI;
+    const otherRFB     = +rec[otherKey]?.rfb || 0;
+    const otherTI      = (otherSalary - otherSacr) + otherDiv + otherRental + otherRFB;
+    // MLS family income includes RFB and net investment loss for each person
+    const familyIncome = (taxableIncome + rfb + totalNetInvLoss) + (otherTI);
     const deps         = +(rec.dependants||0);
     const mls          = calcMLS(taxableIncome, familyIncome, hasPrivH, deps);
     const totalLiability = grossTax + hecsRep + mls + div293;
     const netTax    = Math.max(0, totalLiability - withheld - payg - myFrank);
     const refund    = Math.max(0, withheld + payg + myFrank - totalLiability);
-    return { salary, withheld, payg, sacrifice, myDiv, myFrank, investInterestDeduction, empSGManual, empSuper, sgRate, totalConcess, div293Income, div293Threshold:250000, medicareLevy,
+    return { salary, withheld, payg, sacrifice, rfb, myDiv, myFrank, investInterestDeduction, totalNetInvLoss, empSGManual, empSuper, sgRate, totalConcess, div293Income, div293Threshold:250000, medicareLevy,
              netPropLoss, netPropGain, netRent, netExpenses,
              myCGT, taxableIncome, grossTax, medicareLevy, hecsRep, mls, div293,
              totalLiability, netTax, refund, hecsDebt, hasPrivH };
@@ -8272,6 +8280,18 @@ function renderTax(){
               onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','payg',v,${fy}));}"
               onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
               onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','payg',parseFloat(this.value)||0,${fy});"></div>
+          <div>
+            <label class="fl">Reportable Fringe Benefits
+              <span style="color:var(--text3);font-size:10px">(grossed-up &middot; from income statement)</span>
+            </label>
+            <input type="text" inputmode="text" class="fi math-tax-inp" style="padding:4px 8px"
+              placeholder="e.g. 15000 or leave blank" value="${pRec.rfb||''}" id="ti-${person}-rfb-${fy}" data-prior="${pRec.rfb||0}" data-committed="${pRec.rfb||0}"
+              onfocus="mathInpInit(this)"
+              oninput="mathInpInput(this)"
+              onkeydown="if(event.key==='Enter'||event.key==='Tab'){event.preventDefault();mathInpCommit(this,v=>taxInpSave('${person}','rfb',v,${fy}));}"
+              onkeyup="if(event.key==='Escape'){this.value=this.dataset.prior||'';mathInpHint(this);}"
+              onblur="mathInpHint(this);if(this.value&&this.value.trim().match(/^[\d.]+$/))taxInpSave('${person}','rfb',parseFloat(this.value)||0,${fy});">
+          </div>
           <div style="grid-column:1/-1">
             <label class="fl">Salary Sacrifice to Super
               <span style="color:var(--text3);font-size:10px">(pre-tax · reduces taxable income)</span>
@@ -8388,6 +8408,10 @@ function renderTax(){
       </tr></thead>
       <tbody>
         ${row('Gross Salary',n2(lumTax.salary),n2(chiTax.salary))}
+        ${(lumTax.rfb>0||chiTax.rfb>0)?row('Reportable Fringe Benefits',
+          lumTax.rfb>0?'+'+n2(lumTax.rfb):'—',
+          chiTax.rfb>0?'+'+n2(chiTax.rfb):'—',
+          '','not taxable income — used for Div293 & MLS threshold tests only'):''}
         ${`<tr>
           <td style='color:var(--text3);font-size:12px;padding:5px 8px'>Dividend Income (cash)<span style='color:var(--text3);font-size:10px'> from dividends tab</span></td>
           <td style='font-family:var(--mono);font-size:12px;text-align:right;padding:5px 8px;cursor:pointer;text-decoration:underline dotted;color:var(--green)' onclick='taxDrillDividends("lumia",${fy})' title='Click to see these dividends'>${n2(lumTax.myDiv)}</td>
@@ -8404,6 +8428,11 @@ function renderTax(){
           chiTax.investInterestDeduction>0?'-'+n2(chiTax.investInterestDeduction):'—',
           'neg','interest on loan used to buy investments'
         ):''}
+        ${(lumTax.totalNetInvLoss>0||chiTax.totalNetInvLoss>0)?row(
+          '  └ Net Investment Loss (added back for Div293/MLS)',
+          lumTax.totalNetInvLoss>0?n2(lumTax.totalNetInvLoss):'—',
+          chiTax.totalNetInvLoss>0?n2(chiTax.totalNetInvLoss):'—',
+          '','not added to taxable income — used for Div293 & MLS threshold tests only'):''}
         ${row('Net Rental Income',lumTax.netRent>lumTax.netExpenses?'+'+n2(lumTax.netRent-lumTax.netExpenses):'—',chiTax.netRent>chiTax.netExpenses?'+'+n2(chiTax.netRent-chiTax.netExpenses):'—')}
         ${row('Rental Loss (negative gearing)',lumTax.netPropLoss>0?'-'+n2(lumTax.netPropLoss):'—',chiTax.netPropLoss>0?'-'+n2(chiTax.netPropLoss):'—','neg')}
         ${row('Net Capital Gain (after 50% disc)',n2(lumTax.myCGT),n2(chiTax.myCGT),'',cgt.totalLoss>0?'capital losses: -'+n2(cgt.totalLoss):'')}
@@ -9443,6 +9472,16 @@ function showDiv293Breakdown(personKey){
         <td style="padding:5px 0;color:var(--text2)">Salary Sacrifice</td>
         <td style="text-align:right;color:var(--text)">${n2l(t.sacrifice)}</td>
       </tr>
+      ${t.rfb > 0 ? `
+      <tr style='border-bottom:1px solid var(--border)'>
+        <td style='padding:5px 0;color:var(--text2)'>Reportable Fringe Benefits</td>
+        <td style='text-align:right;color:var(--text)'>${n2l(t.rfb)}</td>
+      </tr>` : ''}
+      ${t.totalNetInvLoss > 0 ? `
+      <tr style='border-bottom:1px solid var(--border)'>
+        <td style='padding:5px 0;color:var(--text2)'>Net Investment Loss (added back)</td>
+        <td style='text-align:right;color:var(--text)'>${n2l(t.totalNetInvLoss)}</td>
+      </tr>` : ''}
       <tr style="border-bottom:2px solid var(--border2);font-weight:700">
         <td style="padding:6px 0;color:var(--text)">Div293 Income</td>
         <td style="text-align:right;color:var(--text)">${n2l(t.div293Income)}</td>
